@@ -38,7 +38,6 @@ task interhost__multi_align_mafft_ref {
   input {
     File           reference_fasta
     Array[File]+   assemblies_fasta # fasta files, one per sample, multiple chrs per file okay
-    String         fasta_basename = basename(reference_fasta, '.fasta')
     Int?           mafft_maxIters
     Float?         mafft_ep
     Float?         mafft_gapOpeningPenalty
@@ -46,6 +45,8 @@ task interhost__multi_align_mafft_ref {
     Int?           machine_mem_gb
     String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.0"
   }
+
+  String           fasta_basename = basename(reference_fasta, '.fasta')
 
   command {
     interhost.py --version | tee VERSION

@@ -20,7 +20,6 @@ task ncbi__download_annotations {
     String         emailAddress
     String         combined_out_prefix
 
-    Int?           machine_mem_gb
     String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.0"
   }
 
@@ -49,9 +48,9 @@ task ncbi__download_annotations {
 
   runtime {
     docker: "${docker}"
-    memory: select_first([machine_mem_gb, 3]) + " GB"
+    memory: "7 GB"
     cpu: 2
-    dx_instance_type: "mem1_ssd1_v2_x2"
+    dx_instance_type: "mem2_ssd1_v2_x2"
   }
 }
 
