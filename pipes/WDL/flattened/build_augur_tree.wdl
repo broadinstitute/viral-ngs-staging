@@ -89,7 +89,7 @@ workflow build_augur_tree {
     call nextstrain__export_auspice_json as export_auspice_json {
         input:
             tree            = refine_augur_tree.tree_refined,
-            metadata        = sample_metadata,
+            sample_metadata = sample_metadata,
             node_data_jsons = select_all([
                                 refine_augur_tree.branch_lengths,
                                 ancestral_traits.node_data_json,
@@ -156,6 +156,7 @@ task nextstrain__augur_mafft_align {
         String   docker = "nextstrain/base:build-20200506T095107Z"
     }
     command {
+        augur version > VERSION
         augur align --sequences ~{sequences} \
             --reference-sequence ~{ref_fasta} \
             --output ~{basename}_aligned.fasta \
@@ -164,7 +165,7 @@ task nextstrain__augur_mafft_align {
             ~{true="--remove-reference" false="" remove_reference} \
             --debug \
             --nthreads auto
-        cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MAX_RAM
+        cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes
     }
     runtime {
         docker: docker
@@ -177,7 +178,7 @@ task nextstrain__augur_mafft_align {
     output {
         File aligned_sequences = "~{basename}_aligned.fasta"
         File align_troubleshoot = stdout()
-        File max_ram_usage_in_bytes = "MAX_RAM"
+        String augur_version = read_string("VERSION")
     }
 }
 
@@ -202,6 +203,7 @@ task nextstrain__draft_augur_tree {
         String   docker = "nextstrain/base:build-20200506T095107Z"
     }
     command {
+        augur version > VERSION
         augur tree --alignment ~{aligned_fasta} \
             --output ~{basename}_raw_tree.nwk \
             --method ~{default="iqtree" method} \
@@ -221,6 +223,7 @@ task nextstrain__draft_augur_tree {
     }
     output {
         File aligned_tree = "~{basename}_raw_tree.nwk"
+        String augur_version = read_string("VERSION")
     }
 }
 
@@ -257,6 +260,7 @@ task nextstrain__refine_augur_tree {
         String   docker = "nextstrain/base:build-20200506T095107Z"
     }
     command {
+        augur version > VERSION
         augur refine \
             --tree ~{raw_tree} \
             --alignment ~{aligned_fasta} \
@@ -291,6 +295,7 @@ task nextstrain__refine_augur_tree {
     output {
         File tree_refined  = "~{basename}_refined_tree.nwk"
         File branch_lengths = "~{basename}_branch_lengths.json"
+        String augur_version = read_string("VERSION")
     }
 }
 
@@ -315,6 +320,7 @@ task nextstrain__ancestral_traits {
         String   docker = "nextstrain/base:build-20200506T095107Z"
     }
     command {
+        augur version > VERSION
         augur traits \
             --tree ~{tree} \
             --metadata ~{metadata} \
@@ -333,6 +339,7 @@ task nextstrain__ancestral_traits {
     }
     output {
         File node_data_json = "~{basename}_nodes.json"
+        String augur_version = read_string("VERSION")
     }
 }
 
@@ -359,6 +366,7 @@ task nextstrain__ancestral_tree {
         String   docker = "nextstrain/base:build-20200506T095107Z"
     }
     command {
+        augur version > VERSION
         augur ancestral \
             --tree ~{refined_tree} \
             --alignment ~{aligned_fasta} \
@@ -382,6 +390,7 @@ task nextstrain__ancestral_tree {
     output {
         File nt_muts_json = "~{basename}_nt_muts.json"
         File sequences    = "~{basename}_ancestral_sequences.fasta"
+        String augur_version = read_string("VERSION")
     }
 }
 
@@ -406,6 +415,7 @@ task nextstrain__translate_augur_tree {
         String docker = "nextstrain/base:build-20200506T095107Z"
     }
     command {
+        augur version > VERSION
         augur translate --tree ~{refined_tree} \
             --ancestral-sequences ~{nt_muts} \
             --reference-sequence ~{genbank_gb} \
@@ -424,6 +434,7 @@ task nextstrain__translate_augur_tree {
     }
     output {
         File aa_muts_json = "~{basename}_aa_muts.json"
+        String augur_version = read_string("VERSION")
     }
 }
 
@@ -436,28 +447,66 @@ task nextstrain__export_auspice_json {
     }
     input {
         File        auspice_config
-        File?       metadata
+        File?       sample_metadata
         File        tree
         Array[File] node_data_jsons
 
-        File?       lat_longs_tsv
-        File?       colors_tsv
+        File?          lat_longs_tsv
+        File?          colors_tsv
+        Array[String]? geo_resolutions
+        Array[String]? color_by_metadata
+        File?          description_md
+        Array[String]? maintainers
+        String?        title
 
         Int?   machine_mem_gb
         String docker = "nextstrain/base:build-20200506T095107Z"
     }
     String out_basename = basename(basename(tree, ".nwk"), "_refined_tree")
     command {
-        NODE_DATA_FLAG=""
+        augur version > VERSION
+        touch exportargs
+
+        # --node-data
         if [ -n "~{sep=' ' node_data_jsons}" ]; then
-          NODE_DATA_FLAG="--node-data "
+            echo "--node-data" >> exportargs
+            cat "~{write_lines(node_data_jsons)}" >> exportargs
         fi
-        augur export v2 --tree ~{tree} \
-            ~{"--metadata " + metadata} \
-            $NODE_DATA_FLAG ~{sep=' ' node_data_jsons}\
+
+        # --geo-resolutions
+        VALS="~{write_lines(select_first([geo_resolutions, []]))}"
+        if [ -n "$(cat $VALS)" ]; then
+            echo "--geo-resolutions" >> exportargs;
+        fi
+        cat $VALS >> exportargs
+
+        # --color-by-metadata
+        VALS="~{write_lines(select_first([color_by_metadata, []]))}"
+        if [ -n "$(cat $VALS)" ]; then
+            echo "--color-by-metadata" >> exportargs;
+        fi
+        cat $VALS >> exportargs
+
+        # --title
+        if [ -n "~{title}" ]; then
+            echo "--title" >> exportargs
+            echo "~{title}" >> exportargs
+        fi
+
+        # --maintainers
+        VALS="~{write_lines(select_first([maintainers, []]))}"
+        if [ -n "$(cat $VALS)" ]; then
+            echo "--maintainers" >> exportargs;
+        fi
+        cat $VALS >> exportargs
+
+        cat exportargs | tr '\n' '\0' | xargs -0 -t augur export v2 \
+            --tree ~{tree} \
+            ~{"--metadata " + sample_metadata} \
             --auspice-config ~{auspice_config} \
             ~{"--lat-longs " + lat_longs_tsv} \
             ~{"--colors " + colors_tsv} \
+            ~{"--description_md " + description_md} \
             --output ~{out_basename}_auspice.json
     }
     runtime {
@@ -470,6 +519,7 @@ task nextstrain__export_auspice_json {
     }
     output {
         File virus_json = "~{out_basename}_auspice.json"
+        String augur_version = read_string("VERSION")
     }
 }
 
