@@ -32,6 +32,8 @@ task interhost__trimal_clean_msa {
   runtime {
     docker: "${docker}"
     memory: select_first([machine_mem_gb, 7]) + " GB"
+    cpu: 4
+    disks: "local-disk 100 HDD"
     dx_instance_type: "mem1_ssd1_v2_x8"
   }
 }

@@ -159,6 +159,7 @@ task interhost__multi_align_mafft_ref {
     docker: "${docker}"
     memory: select_first([machine_mem_gb, 28]) + " GB"
     cpu: 8
+    disks: "local-disk 200 HDD"
     dx_instance_type: "mem2_ssd1_v2_x8"
   }
 }

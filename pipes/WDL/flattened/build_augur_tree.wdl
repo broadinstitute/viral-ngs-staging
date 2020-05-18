@@ -88,13 +88,13 @@ workflow build_augur_tree {
     }
     call nextstrain__export_auspice_json as export_auspice_json {
         input:
-            refined_tree   = refine_augur_tree.tree_refined,
-            metadata       = sample_metadata,
-            branch_lengths = refine_augur_tree.branch_lengths,
-            traits         = ancestral_traits.node_data_json,
-            nt_muts        = ancestral_tree.nt_muts_json,
-            aa_muts        = translate_augur_tree.aa_muts_json,
-            basename       = virus
+            tree            = refine_augur_tree.tree_refined,
+            metadata        = sample_metadata,
+            node_data_jsons = select_all([
+                                refine_augur_tree.branch_lengths,
+                                ancestral_traits.node_data_json,
+                                ancestral_tree.nt_muts_json,
+                                translate_augur_tree.aa_muts_json])
     }
 
     output {
@@ -432,37 +432,33 @@ task nextstrain__translate_augur_tree {
 
 task nextstrain__export_auspice_json {
     meta {
-        description: "export augur files to json suitable for auspice visualization. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/export.html"
+        description: "export augur files to json suitable for auspice visualization. The metadata tsv input is generally required unless the node_data_jsons comprehensively capture all of it. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/export.html"
     }
     input {
-        File   auspice_config
-        File   metadata
-        File   refined_tree
-        File?  branch_lengths
-        File?  traits
-        File?  nt_muts
-        File?  aa_muts
-        File?  lat_longs_tsv
-        File?  colors_tsv
-        String basename
+        File        auspice_config
+        File?       metadata
+        File        tree
+        Array[File] node_data_jsons
+
+        File?       lat_longs_tsv
+        File?       colors_tsv
 
         Int?   machine_mem_gb
         String docker = "nextstrain/base:build-20200506T095107Z"
     }
+    String out_basename = basename(basename(tree, ".nwk"), "_refined_tree")
     command {
-
         NODE_DATA_FLAG=""
-        if [[ -n "~{branch_lengths}" || -n "~{traits}" || -n "~{nt_muts}" || -n "~{aa_muts}" ]]; then
+        if [ -n "~{sep=' ' node_data_jsons}" ]; then
           NODE_DATA_FLAG="--node-data "
         fi
-
-        augur export v2 --tree ~{refined_tree} \
-            --metadata ~{metadata} \
-            $NODE_DATA_FLAG ~{sep=' ' select_all([branch_lengths,traits,nt_muts,aa_muts])}\
+        augur export v2 --tree ~{tree} \
+            ~{"--metadata " + metadata} \
+            $NODE_DATA_FLAG ~{sep=' ' node_data_jsons}\
             --auspice-config ~{auspice_config} \
             ~{"--lat-longs " + lat_longs_tsv} \
             ~{"--colors " + colors_tsv} \
-            --output ~{basename}_auspice.json
+            --output ~{out_basename}_auspice.json
     }
     runtime {
         docker: docker
@@ -473,7 +469,7 @@ task nextstrain__export_auspice_json {
         preemptible: 2
     }
     output {
-        File virus_json = "~{basename}_auspice.json"
+        File virus_json = "~{out_basename}_auspice.json"
     }
 }
 

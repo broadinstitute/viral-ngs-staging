@@ -25,6 +25,16 @@ workflows:
    primaryDescriptorPath: pipes/WDL/flattened/bams_multiqc.wdl
    testParameterFiles:
     - empty.json
+ - name: beast_gpu
+   subclass: WDL
+   primaryDescriptorPath: pipes/WDL/flattened/beast_gpu.wdl
+   testParameterFiles:
+    - empty.json
+ - name: beast_to_auspice
+   subclass: WDL
+   primaryDescriptorPath: pipes/WDL/flattened/beast_to_auspice.wdl
+   testParameterFiles:
+    - empty.json
  - name: build_augur_tree
    subclass: WDL
    primaryDescriptorPath: pipes/WDL/flattened/build_augur_tree.wdl
