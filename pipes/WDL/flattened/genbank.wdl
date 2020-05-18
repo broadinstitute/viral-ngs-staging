@@ -129,7 +129,7 @@ task interhost__multi_align_mafft_ref {
     Float?         mafft_gapOpeningPenalty
 
     Int?           machine_mem_gb
-    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.0"
+    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.1"
   }
 
   String           fasta_basename = basename(reference_fasta, '.fasta')
@@ -177,7 +177,7 @@ task ncbi__annot_transfer {
     File         reference_fasta
     Array[File]+ reference_feature_table
 
-    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.0"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.1"
   }
 
   parameter_meta {
@@ -239,9 +239,11 @@ task ncbi__prepare_genbank {
     String?      comment
     String?      organism
     String?      molType
+    String?      assembly_method
+    String?      assembly_method_version
 
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-phylo:2.0.21.0"
+    String       docker="quay.io/broadinstitute/viral-phylo:2.0.21.1"
   }
 
   parameter_meta {
@@ -278,6 +280,12 @@ task ncbi__prepare_genbank {
     molType: {
       description: "The type of molecule being described. Any value allowed by the INSDC controlled vocabulary may be used here. Valid values are described at http://www.insdc.org/controlled-vocabulary-moltype-qualifier"
     }
+    assembly_method: {
+      description: "Very short description of the software approach used to assemble the genome. We typically provide a github link here. If this is specified, assembly_method_version should also be specified."
+    }
+    assembly_method_version: {
+      description: "The version of the software used. If this is specified, assembly_method should also be specified."
+    }
     comment: {
       description: "Optional comments that can be displayed in the COMMENT section of the Genbank record. This may include any disclaimers about assembly quality or notes about pre-publication availability or requests to discuss pre-publication use with authors."
     }
@@ -305,6 +313,12 @@ task ncbi__prepare_genbank {
     if [ -n "${molType}" ]; then
       echo "--mol_type" >> special_args
       echo "${molType}" >> special_args
+    fi
+    if [ -n "${assembly_method}" -a -n "${assembly_method_version}" ]; then
+      echo "--assembly_method" >> special_args
+      echo "${assembly_method}" >> special_args
+      echo "--assembly_method_version" >> special_args
+      echo "${assembly_method_version}" >> special_args
     fi
     if [ -n "${coverage_table}" ]; then
       echo -e "sample\taln2self_cov_median" > coverage_table.txt
