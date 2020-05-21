@@ -25,7 +25,7 @@ task download_fasta {
     Array[String]+ accessions
     String         emailAddress
 
-    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
+    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.5"
   }
 
   command {
@@ -56,7 +56,7 @@ task download_annotations {
     String         emailAddress
     String         combined_out_prefix
 
-    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
+    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.5"
   }
 
   command {
@@ -100,7 +100,7 @@ task annot_transfer {
     File         reference_fasta
     Array[File]+ reference_feature_table
 
-    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.5"
   }
 
   parameter_meta {
@@ -153,7 +153,7 @@ task align_and_annot_transfer_single {
     Array[File]+ reference_fastas
     Array[File]+ reference_feature_tables
 
-    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.5"
   }
 
   parameter_meta {
@@ -195,7 +195,7 @@ task align_and_annot_transfer_single {
     memory: "15 GB"
     cpu: 4
     dx_instance_type: "mem2_ssd1_v2_x4"
-    preemptible: 2
+    preemptible: 1
   }
 }
 
@@ -208,7 +208,7 @@ task biosample_to_genbank {
     Int   num_segments=1
     Int   taxid
 
-    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.5"
   }
   String base = basename(biosample_attributes, ".txt")
   command {
@@ -231,7 +231,6 @@ task biosample_to_genbank {
     memory: "1 GB"
     cpu: 1
     dx_instance_type: "mem1_ssd1_v2_x2"
-    preemptible: 1
   }
 }
 
@@ -255,7 +254,7 @@ task prepare_genbank {
     String?      assembly_method_version
 
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
+    String       docker="quay.io/broadinstitute/viral-phylo:2.0.21.5"
   }
 
   parameter_meta {
