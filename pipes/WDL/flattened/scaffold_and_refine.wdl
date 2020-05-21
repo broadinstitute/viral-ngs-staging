@@ -77,7 +77,7 @@ task assembly__scaffold {
         set -ex -o pipefail
 
         # find 90% memory
-        mem_in_gb=`/opt/viral-ngs/source/docker/calc_mem.py gb 90`
+        mem_in_gb=$(/opt/viral-ngs/source/docker/calc_mem.py gb 90)
 
         assembly.py --version | tee VERSION
 
@@ -176,7 +176,7 @@ task assembly__refine_2x_and_plot {
         set -ex -o pipefail
 
         # find 90% memory
-        mem_in_mb=`/opt/viral-ngs/source/docker/calc_mem.py mb 90`
+        mem_in_mb=$(/opt/viral-ngs/source/docker/calc_mem.py mb 90)
 
         assembly.py --version | tee VERSION
 
@@ -232,7 +232,7 @@ task assembly__refine_2x_and_plot {
         grep properly ${sample_name}.all.bam.flagstat.txt | cut -f 1 -d ' ' | tee read_pairs_aligned
         samtools view ${sample_name}.mapped.bam | cut -f10 | tr -d '\n' | wc -c | tee bases_aligned
         #echo $(( $(cat bases_aligned) / $(cat assembly_length) )) | tee mean_coverage
-        python -c "print (float("`cat bases_aligned`")/"`cat assembly_length`") if "`cat assembly_length`">0 else 0" > mean_coverage
+        python -c "print (float("$(cat bases_aligned)")/"$(cat assembly_length)") if "$(cat assembly_length)">0 else 0" > mean_coverage
 
         # fastqc mapped bam
         reports.py fastqc ${sample_name}.mapped.bam ${sample_name}.mapped_fastqc.html --out_zip ${sample_name}.mapped_fastqc.zip

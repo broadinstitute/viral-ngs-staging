@@ -38,7 +38,7 @@ task tasks_read_utils__FastqToUBAM {
       set -ex -o pipefail
 
       # find 90% memory
-      mem_in_mb=`/opt/viral-ngs/source/docker/calc_mem.py mb 90`
+      mem_in_mb=$(/opt/viral-ngs/source/docker/calc_mem.py mb 90)
 
       read_utils.py --version | tee VERSION
 

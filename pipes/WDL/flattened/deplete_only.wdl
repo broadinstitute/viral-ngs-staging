@@ -61,8 +61,8 @@ task taxon_filter__deplete_taxa {
     fi
 
     # find memory thresholds
-    mem_in_mb_50=`/opt/viral-ngs/source/docker/calc_mem.py mb 50`
-    mem_in_mb_75=`/opt/viral-ngs/source/docker/calc_mem.py mb 75`
+    mem_in_mb_50=$(/opt/viral-ngs/source/docker/calc_mem.py mb 50)
+    mem_in_mb_75=$(/opt/viral-ngs/source/docker/calc_mem.py mb 75)
 
     # bmtagger and blast db args
     DBS_BMTAGGER="${sep=' ' bmtaggerDbs}"

@@ -103,8 +103,8 @@ task metagenomics__krakenuniq {
     metagenomics.py krakenuniq \
       $DB_DIR/krakenuniq \
       ${sep=' ' reads_unmapped_bam} \
-      --outReads `cat $OUT_READS` \
-      --outReport `cat $OUT_REPORTS` \
+      --outReads $(cat $OUT_READS) \
+      --outReport $(cat $OUT_REPORTS) \
       --loglevel=DEBUG
 
     wait # for krona_taxonomy_db_tgz to download and extract
@@ -122,7 +122,7 @@ task metagenomics__krakenuniq {
         --sample_name ,, \
         --noRank --noHits --inputType krakenuniq \
         --loglevel=DEBUG" \
-      ::: `cat $OUT_BASENAME`
+      ::: $(cat $OUT_BASENAME)
 
     # merge all krona reports
     ktImportKrona -o krakenuniq.krona.combined.html *.krakenuniq-krona.html

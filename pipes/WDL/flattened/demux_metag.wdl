@@ -167,7 +167,7 @@ task demux__illumina_demux {
     set -ex -o pipefail
 
     # find N% memory
-    mem_in_mb=`/opt/viral-ngs/source/docker/calc_mem.py mb 85`
+    mem_in_mb=$(/opt/viral-ngs/source/docker/calc_mem.py mb 85)
 
     if [ -z "$TMPDIR" ]; then
       export TMPDIR=$(pwd)
@@ -337,7 +337,7 @@ task demux__illumina_demux {
         ,,_fastqc.html \
         --out_zip ,,_fastqc.zip \
         --threads $num_fastqc_threads" \
-      ::: `cat $OUT_BASENAMES`
+      ::: $(cat $OUT_BASENAMES)
   }
 
   output {
@@ -458,8 +458,8 @@ task taxon_filter__deplete_taxa {
     fi
 
     # find memory thresholds
-    mem_in_mb_50=`/opt/viral-ngs/source/docker/calc_mem.py mb 50`
-    mem_in_mb_75=`/opt/viral-ngs/source/docker/calc_mem.py mb 75`
+    mem_in_mb_50=$(/opt/viral-ngs/source/docker/calc_mem.py mb 50)
+    mem_in_mb_75=$(/opt/viral-ngs/source/docker/calc_mem.py mb 75)
 
     # bmtagger and blast db args
     DBS_BMTAGGER="${sep=' ' bmtaggerDbs}"
@@ -594,8 +594,8 @@ task assembly__assemble {
         set -ex -o pipefail
 
         # find 90% memory
-        mem_in_mb=`/opt/viral-ngs/source/docker/calc_mem.py mb 90`
-        mem_in_gb=`/opt/viral-ngs/source/docker/calc_mem.py gb 90`
+        mem_in_mb=$(/opt/viral-ngs/source/docker/calc_mem.py mb 90)
+        mem_in_gb=$(/opt/viral-ngs/source/docker/calc_mem.py gb 90)
 
         assembly.py --version | tee VERSION
 
@@ -842,7 +842,7 @@ task metagenomics__blastx {
       -db $DB_DIR/blast/nr \
       -out "${out_basename}.blastx.contigs.txt" \
       -outfmt 7 \
-      -num_threads `nproc`
+      -num_threads $(nproc)
 
     wait # for krona_taxonomy_db_tgz to download and extract
 

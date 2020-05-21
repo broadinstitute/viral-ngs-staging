@@ -7,7 +7,7 @@ workflow isnvs_one_sample {
 
     output {
         File   isnvsFile                   = isnvs_per_sample.isnvsFile
-        String isnvs_viral_phylo_version       = isnvs_per_sample.viralngs_version
+        String isnvs_viral_phylo_version   = isnvs_per_sample.viralngs_version
     }
 }
 

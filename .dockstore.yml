@@ -160,6 +160,16 @@ workflows:
    primaryDescriptorPath: pipes/WDL/flattened/merge_tar_chunks.wdl
    testParameterFiles:
     - empty.json
+ - name: merge_vcfs_and_annotate
+   subclass: WDL
+   primaryDescriptorPath: pipes/WDL/flattened/merge_vcfs_and_annotate.wdl
+   testParameterFiles:
+    - empty.json
+ - name: merge_vcfs
+   subclass: WDL
+   primaryDescriptorPath: pipes/WDL/flattened/merge_vcfs.wdl
+   testParameterFiles:
+    - empty.json
  - name: multiqc_only
    subclass: WDL
    primaryDescriptorPath: pipes/WDL/flattened/multiqc_only.wdl
