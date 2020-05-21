@@ -10,18 +10,18 @@ workflow genbank {
     }
 
     input {
-        File          reference_fasta
-        Array[File]+  reference_annot_tbl
+        Array[File]+  reference_fastas
+        Array[File]+  reference_feature_tables
         Array[File]+  assemblies_fasta
 
         File          authors_sbt
-        File?         biosampleMap
-        File?         genbankSourceTable
+        File          biosample_attributes
+        Int           taxid
         File?         coverage_table
         String?       sequencingTech
         String?       comment
         String?       organism
-        String?       molType
+        String?       molType='cRNA'
     }
 
     parameter_meta {
@@ -29,27 +29,24 @@ workflow genbank {
           description: "Genomes to prepare for Genbank submission. One file per genome: all segments/chromosomes included in one file. All fasta files must contain exactly the same number of sequences as reference_fasta (which must equal the number of files in reference_annot_tbl).",
           patterns: ["*.fasta"]
         }
-        reference_fasta: {
-          description: "Reference genome, all segments/chromosomes in one fasta file. Headers must be Genbank accessions.",
+        reference_fastas: {
+          description: "Reference genome, each segment/chromosome in a separate fasta file, in the exact same count and order as the segments/chromosomes described in genome_fasta. Headers must be Genbank accessions.",
           patterns: ["*.fasta"]
         }
-        reference_annot_tbl: {
-          description: "NCBI Genbank feature tables, one file for each segment/chromosome described in reference_fasta.",
+        reference_feature_tables: {
+          description: "NCBI Genbank feature table, each segment/chromosome in a separate TBL file, in the exact same count and order as the segments/chromosomes described in genome_fasta and reference_fastas. Accession numbers in the TBL files must correspond exactly to those in reference_fasta.",
           patterns: ["*.tbl"]
         }
         authors_sbt: {
           description: "A genbank submission template file (SBT) with the author list, created at https://submit.ncbi.nlm.nih.gov/genbank/template/submission/",
           patterns: ["*.sbt"]
         }
-        biosampleMap: {
-          description: "A two column tab text file mapping sample IDs (first column) to NCBI BioSample accession numbers (second column). These typically take the format 'SAMN****' and are obtained by registering your samples first at https://submit.ncbi.nlm.nih.gov/",
-          patterns: ["*.txt", "*.tsv"],
-          category: "common"
+        biosample_attributes: {
+          description: "A post-submission attributes file from NCBI BioSample, which is available at https://submit.ncbi.nlm.nih.gov/subs/ and clicking on 'Download attributes file with BioSample accessions'.",
+          patterns: ["*.txt", "*.tsv"]
         }
-        genbankSourceTable: {
-          description: "A tab-delimited text file containing requisite metadata for Genbank (a 'source modifier table'). https://www.ncbi.nlm.nih.gov/WebSub/html/help/genbank-source-table.html",
-          patterns: ["*.txt", "*.tsv", "*.src"],
-          category: "common"
+        taxid: {
+          description: "The NCBI taxonomy ID for the species being submitted in this batch (all sequences in this batch must belong to the same taxid). https://www.ncbi.nlm.nih.gov/taxonomy/"
         }
         coverage_table: {
           description: "A two column tab text file mapping sample IDs (first column) to average sequencing coverage (second column, floating point number).",
@@ -65,7 +62,7 @@ workflow genbank {
           category: "common"
         }
         molType: {
-          description: "The type of molecule being described. This defaults to 'viral cRNA' as this pipeline is most commonly used for viral submissions, but any value allowed by the INSDC controlled vocabulary may be used here. Valid values are described at http://www.insdc.org/controlled-vocabulary-moltype-qualifier",
+          description: "The type of molecule being described. This defaults to 'cRNA' as this pipeline is most commonly used for viral submissions, but any value allowed by the INSDC controlled vocabulary may be used here. Valid values are described at http://www.insdc.org/controlled-vocabulary-moltype-qualifier",
           category: "common"
         }
         comment: {
@@ -74,28 +71,29 @@ workflow genbank {
 
     }
 
-    call interhost__multi_align_mafft_ref as mafft {
+    call ncbi__biosample_to_genbank as biosample_to_genbank {
         input:
-            reference_fasta = reference_fasta,
-            assemblies_fasta = assemblies_fasta
+            biosample_attributes = biosample_attributes,
+            num_segments = length(reference_fastas),
+            taxid = taxid
     }
 
-    scatter(alignment_by_chr in mafft.alignments_by_chr) {
-        call ncbi__annot_transfer as annot {
+    scatter(assembly in assemblies_fasta) {
+        call ncbi__align_and_annot_transfer_single as annot {
             input:
-                multi_aln_fasta = alignment_by_chr,
-                reference_fasta = reference_fasta,
-                reference_feature_table = reference_annot_tbl
+                genome_fasta = assembly,
+                reference_fastas = reference_fastas,
+                reference_feature_tables = reference_feature_tables
         }
     }
  
     call ncbi__prepare_genbank as prep_genbank {
         input:
             assemblies_fasta = assemblies_fasta,
-            annotations_tbl = flatten(annot.transferred_feature_tables),
+            annotations_tbl = flatten(annot.genome_per_chr_tbls),
             authors_sbt = authors_sbt,
-            biosampleMap = biosampleMap,
-            genbankSourceTable = genbankSourceTable,
+            biosampleMap = biosample_to_genbank.biosample_map,
+            genbankSourceTable = biosample_to_genbank.genbank_source_modifier_table,
             coverage_table = coverage_table,
             sequencingTech = sequencingTech,
             comment = comment,
@@ -104,93 +102,87 @@ workflow genbank {
     }
 
     output {
-        File        submission_zip = prep_genbank.submission_zip
-        File        archive_zip    = prep_genbank.archive_zip
-        File        errorSummary   = prep_genbank.errorSummary
+        File submission_zip = prep_genbank.submission_zip
+        File archive_zip    = prep_genbank.archive_zip
+        File errorSummary   = prep_genbank.errorSummary
 
-        Array[File] alignments_by_chr          = mafft.alignments_by_chr
-        Array[File] transferred_feature_tables = flatten(annot.transferred_feature_tables)
+        File biosample_map = biosample_to_genbank.biosample_map
+        File genbank_source_table = biosample_to_genbank.genbank_source_modifier_table
+
+        Array[File] transferred_annot_tbls = flatten(annot.genome_per_chr_tbls)
         Array[File] genbank_preview_files      = prep_genbank.genbank_preview_files
         Array[File] validation_files           = prep_genbank.validation_files
 
-        String      viral_phylo_version = mafft.viralngs_version
+        String      viral_phylo_version = prep_genbank.viralngs_version
     }
 
 }
 
 
 
-task interhost__multi_align_mafft_ref {
+task ncbi__biosample_to_genbank {
+  meta {
+    description: "Prepares two input metadata files for Genbank submission based on a BioSample registration attributes table (attributes.tsv) since all of the necessary values are there. This produces both a Genbank Source Modifier Table and a BioSample ID map file that can be fed into the prepare_genbank task."
+  }
   input {
-    File           reference_fasta
-    Array[File]+   assemblies_fasta # fasta files, one per sample, multiple chrs per file okay
-    Int?           mafft_maxIters
-    Float?         mafft_ep
-    Float?         mafft_gapOpeningPenalty
+    File  biosample_attributes
+    Int   num_segments=1
+    Int   taxid
 
-    Int?           machine_mem_gb
-    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.1"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
   }
-
-  String           fasta_basename = basename(reference_fasta, '.fasta')
-
+  String base = basename(biosample_attributes, ".txt")
   command {
-    interhost.py --version | tee VERSION
-    interhost.py multichr_mafft \
-      ${reference_fasta} ${sep=' ' assemblies_fasta} \
-      . \
-      ${'--ep=' + mafft_ep} \
-      ${'--gapOpeningPenalty=' + mafft_gapOpeningPenalty} \
-      ${'--maxiters=' + mafft_maxIters} \
-      --outFilePrefix align_mafft-${fasta_basename} \
-      --preservecase \
-      --localpair \
-      --sampleNameListFile align_mafft-${fasta_basename}-sample_names.txt \
-      --loglevel DEBUG
+    set -ex -o pipefail
+    ncbi.py --version | tee VERSION
+    ncbi.py biosample_to_genbank \
+        "${biosample_attributes}" \
+        ${num_segments} \
+        ${taxid} \
+        "${base}".genbank.src \
+        "${base}".biosample.map.txt \
+        --loglevel DEBUG
   }
-
   output {
-    #File         sampleNamesFile    = "align_mafft-${fasta_basename}-sample_names.txt"
-    Array[File]+  alignments_by_chr  = glob("align_mafft-${fasta_basename}*.fasta")
-    String        viralngs_version   = read_string("VERSION")
+    File genbank_source_modifier_table = "${base}.genbank.src"
+    File biosample_map                 = "${base}.biosample.map.txt"
   }
-
   runtime {
     docker: "${docker}"
-    memory: select_first([machine_mem_gb, 28]) + " GB"
-    cpu: 8
-    disks: "local-disk 200 HDD"
-    dx_instance_type: "mem2_ssd1_v2_x8"
+    memory: "1 GB"
+    cpu: 1
+    dx_instance_type: "mem1_ssd1_v2_x2"
+    preemptible: 1
   }
 }
 
 
 
 
-task ncbi__annot_transfer {
+task ncbi__align_and_annot_transfer_single {
   meta {
-    description: "Given a reference genome annotation in TBL format (e.g. from Genbank or RefSeq) and a multiple alignment of that reference to other genomes, produce new annotation files (TBL format with appropriate coordinate conversions) for each sequence in the multiple alignment. Resulting output can be fed to tbl2asn for Genbank submission."
+    description: "Given a reference genome annotation in TBL format (e.g. from Genbank or RefSeq) and new genome not in Genbank, produce new annotation files (TBL format with appropriate coordinate conversions) for the new genome. Resulting output can be fed to tbl2asn for Genbank submission."
   }
 
   input {
-    File         multi_aln_fasta
-    File         reference_fasta
-    Array[File]+ reference_feature_table
+    File         genome_fasta
+    Array[File]+ reference_fastas
+    Array[File]+ reference_feature_tables
 
-    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.1"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
   }
 
   parameter_meta {
-    multi_aln_fasta: {
-      description: "multiple alignment of sample sequences against a reference genome -- for a single chromosome",
+    genome_fasta: {
+      description: "New genome, all segments/chromosomes in one fasta file. Must contain the same number of sequences as reference_fasta",
       patterns: ["*.fasta"]
     }
-    reference_fasta: {
-      description: "Reference genome, all segments/chromosomes in one fasta file. Headers must be Genbank accessions.",
+    reference_fastas: {
+      description: "Reference genome, each segment/chromosome in a separate fasta file, in the exact same count and order as the segments/chromosomes described in genome_fasta. Headers must be Genbank accessions.",
       patterns: ["*.fasta"]
     }
-    reference_feature_table: {
-      description: "NCBI Genbank feature tables, one file for each segment/chromosome described in reference_fasta.",
+    reference_feature_tables: {
+      description: "NCBI Genbank feature table, each segment/chromosome in a separate TBL file, in the exact same count and order as the segments/chromosomes described in genome_fasta and reference_fastas. Accession numbers in the TBL files must correspond exactly to those in reference_fasta.",
       patterns: ["*.tbl"]
     }
   }
@@ -198,25 +190,28 @@ task ncbi__annot_transfer {
   command {
     set -e
     ncbi.py --version | tee VERSION
-    ncbi.py tbl_transfer_prealigned \
-        ${multi_aln_fasta} \
-        ${reference_fasta} \
-        ${sep=' ' reference_feature_table} \
-        . \
+    mkdir -p out
+    ncbi.py tbl_transfer_multichr \
+        "${genome_fasta}" \
+        out \
+        --ref_fastas ${sep=' ' reference_fastas} \
+        --ref_tbls ${sep=' ' reference_feature_tables} \
         --oob_clip \
         --loglevel DEBUG
   }
 
   output {
-    Array[File] transferred_feature_tables = glob("*.tbl")
-    String      viralngs_version           = read_string("VERSION")
+    Array[File]+ genome_per_chr_tbls   = glob("out/*.tbl")
+    Array[File]+ genome_per_chr_fastas = glob("out/*.fasta")
+    String       viralngs_version      = read_string("VERSION")
   }
 
   runtime {
     docker: "${docker}"
-    memory: "3 GB"
-    cpu: 2
-    dx_instance_type: "mem1_ssd1_v2_x2"
+    memory: "15 GB"
+    cpu: 4
+    dx_instance_type: "mem2_ssd1_v2_x4"
+    preemptible: 2
   }
 }
 
@@ -243,7 +238,7 @@ task ncbi__prepare_genbank {
     String?      assembly_method_version
 
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-phylo:2.0.21.1"
+    String       docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
   }
 
   parameter_meta {
