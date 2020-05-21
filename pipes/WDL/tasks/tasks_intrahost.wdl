@@ -10,7 +10,7 @@ task isnvs_per_sample {
     Int?    maxBias
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.0.21.5"
 
     String  sample_name = basename(basename(basename(mapped_bam, ".bam"), ".all"), ".mapped")
   }
@@ -51,7 +51,7 @@ task isnvs_vcf {
     Boolean        naiveFilter=false
 
     Int?           machine_mem_gb
-    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.4"
+    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.5"
   }
 
   parameter_meta {
