@@ -232,7 +232,7 @@ task assembly__align_reads {
     samtools view -h -F 260 ${sample_name}.all.bam | samtools flagstat - | tee ${sample_name}.all.bam.flagstat.txt
     grep properly ${sample_name}.all.bam.flagstat.txt | cut -f 1 -d ' ' | tee read_pairs_aligned
     samtools view ${sample_name}.mapped.bam | cut -f10 | tr -d '\n' | wc -c | tee bases_aligned
-    python -c "print (float("`cat bases_aligned`")/"`cat assembly_length_unambiguous`") if "`cat assembly_length_unambiguous`">0 else 0" > mean_coverage
+    python -c "print (float("$(cat bases_aligned)")/"$(cat assembly_length_unambiguous)") if "$(cat assembly_length_unambiguous)">0 else 0" > mean_coverage
 
     # fastqc mapped bam
     reports.py fastqc ${sample_name}.mapped.bam ${sample_name}.mapped_fastqc.html --out_zip ${sample_name}.mapped_fastqc.zip
@@ -302,7 +302,7 @@ task assembly__ivar_trim {
           ${'-s ' + sliding_window} \
           ${'-q ' + min_quality} \
           -i ${aligned_bam} -p trim
-        samtools sort -@ `nproc` -m 1000M -o ${bam_basename}.trimmed.bam trim.bam
+        samtools sort -@ $(nproc) -m 1000M -o ${bam_basename}.trimmed.bam trim.bam
     }
 
     output {
@@ -440,7 +440,7 @@ task reports__plot_coverage {
     samtools view -h -F 260 ${aligned_reads_bam} | samtools flagstat - | tee ${sample_name}.flagstat.txt
     grep properly ${sample_name}.flagstat.txt | cut -f 1 -d ' ' | tee read_pairs_aligned
     samtools view ${aligned_reads_bam} | cut -f10 | tr -d '\n' | wc -c | tee bases_aligned
-    python -c "print (float("`cat bases_aligned`")/"`cat assembly_length`") if "`cat assembly_length`">0 else 0" > mean_coverage
+    python -c "print (float("$(cat bases_aligned)")/"$(cat assembly_length)") if "$(cat assembly_length)">0 else 0" > mean_coverage
   }
 
   output {
@@ -588,7 +588,7 @@ task assembly__refine_assembly_with_aligned_reads {
         set -ex -o pipefail
 
         # find 90% memory
-        mem_in_mb=`/opt/viral-ngs/source/docker/calc_mem.py mb 90`
+        mem_in_mb=$(/opt/viral-ngs/source/docker/calc_mem.py mb 90)
 
         assembly.py --version | tee VERSION
 
@@ -601,7 +601,7 @@ task assembly__refine_assembly_with_aligned_reads {
         else
           ln -s ${reads_aligned_bam} temp_markdup.bam
         fi
-        samtools index -@ `nproc` temp_markdup.bam temp_markdup.bai
+        samtools index -@ $(nproc) temp_markdup.bam temp_markdup.bai
 
         ln -s ${reference_fasta} assembly.fasta
         assembly.py refine_assembly \

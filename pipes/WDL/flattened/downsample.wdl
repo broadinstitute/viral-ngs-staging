@@ -32,7 +32,7 @@ task reads__downsample_bams {
     set -ex -o pipefail
 
     # find 90% memory
-    mem_in_mb=`/opt/viral-ngs/source/docker/calc_mem.py mb 90`
+    mem_in_mb=$(/opt/viral-ngs/source/docker/calc_mem.py mb 90)
 
     if [[ "${deduplicateBefore}" == "true" ]]; then
       DEDUP_OPTION="--deduplicateBefore"

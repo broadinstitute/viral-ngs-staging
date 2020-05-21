@@ -554,8 +554,8 @@ task assembly__assemble {
         set -ex -o pipefail
 
         # find 90% memory
-        mem_in_mb=`/opt/viral-ngs/source/docker/calc_mem.py mb 90`
-        mem_in_gb=`/opt/viral-ngs/source/docker/calc_mem.py gb 90`
+        mem_in_mb=$(/opt/viral-ngs/source/docker/calc_mem.py mb 90)
+        mem_in_gb=$(/opt/viral-ngs/source/docker/calc_mem.py gb 90)
 
         assembly.py --version | tee VERSION
 
@@ -687,7 +687,7 @@ task metagenomics__blastx {
       -db $DB_DIR/blast/nr \
       -out "${out_basename}.blastx.contigs.txt" \
       -outfmt 7 \
-      -num_threads `nproc`
+      -num_threads $(nproc)
 
     wait # for krona_taxonomy_db_tgz to download and extract
 
