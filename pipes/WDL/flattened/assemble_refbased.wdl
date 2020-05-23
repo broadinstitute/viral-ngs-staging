@@ -130,7 +130,7 @@ workflow assemble_refbased {
         Int    assembly_length              = call_consensus.assembly_length
         Int    assembly_length_unambiguous  = call_consensus.assembly_length_unambiguous
         Int    reference_genome_length      = plot_ref_coverage.assembly_length
-        Float  assembly_mean_coverage       = plot_self_coverage.mean_coverage
+        Float  assembly_mean_coverage       = plot_ref_coverage.mean_coverage
 
         Array[File]   align_to_ref_per_input_aligned_flagstat = align_to_ref.aligned_bam_flagstat
         Array[Int]    align_to_ref_per_input_reads_provided   = align_to_ref.reads_provided
@@ -143,7 +143,6 @@ workflow assemble_refbased {
         Int    align_to_ref_merged_reads_aligned            = plot_ref_coverage.reads_aligned
         Int    align_to_ref_merged_read_pairs_aligned       = plot_ref_coverage.read_pairs_aligned
         Int    align_to_ref_merged_bases_aligned            = plot_ref_coverage.bases_aligned
-        Float  align_to_ref_merged_mean_coverage            = plot_ref_coverage.mean_coverage
 
         File   align_to_self_merged_aligned_only_bam   = merge_align_to_self.out_bam
         File   align_to_self_merged_coverage_plot      = plot_self_coverage.coverage_plot
@@ -151,6 +150,7 @@ workflow assemble_refbased {
         Int    align_to_self_merged_reads_aligned      = plot_self_coverage.reads_aligned
         Int    align_to_self_merged_read_pairs_aligned = plot_self_coverage.read_pairs_aligned
         Int    align_to_self_merged_bases_aligned      = plot_self_coverage.bases_aligned
+        Float  align_to_self_merged_mean_coverage            = plot_self_coverage.mean_coverage
 
         String align_to_ref_viral_core_version = align_to_ref.viralngs_version[0]
         String ivar_version                    = ivar_trim.ivar_version[0]
@@ -280,7 +280,7 @@ task assembly__ivar_trim {
       Int?    min_quality
 
       Int?    machine_mem_gb
-      String  docker="andersenlabapps/ivar:1.2.1"
+      String  docker="andersenlabapps/ivar:1.2.2"
     }
 
     String  bam_basename=basename(aligned_bam, ".bam")
@@ -578,10 +578,19 @@ task assembly__refine_assembly_with_aligned_reads {
 
       Boolean? mark_duplicates=false
       Float?   major_cutoff=0.5
-      Int?     min_coverage=2
+      Int?     min_coverage=3
 
       Int?     machine_mem_gb
       String   docker="quay.io/broadinstitute/viral-assemble:2.0.21.0"
+    }
+
+    parameter_meta {
+      major_cutoff: {
+        description: "If the major allele is present at a frequency higher than this cutoff, we will call an unambiguous base at that position.  If it is equal to or below this cutoff, we will call an ambiguous base representing all possible alleles at that position."
+      }
+      min_coverage: {
+        description: "Minimum read coverage required to call a position unambiguous."
+      }
     }
 
     command {
