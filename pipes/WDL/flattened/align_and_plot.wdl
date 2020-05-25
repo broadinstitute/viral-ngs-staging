@@ -66,7 +66,7 @@ task assembly__align_reads {
   }
   
   command {
-    set -ex -o pipefail
+    set -ex # do not set pipefail, since grep exits 1 if it can't find the pattern
 
     read_utils.py --version | tee VERSION
 
@@ -99,10 +99,13 @@ task assembly__align_reads {
         --loglevel=DEBUG
 
     else
-      touch "${sample_name}.all.bam" "${sample_name}.mapped.bam"
+      # handle special case of empty reference fasta -- emit empty bams (with original bam headers)
+      samtools view -H -b "${reads_unmapped_bam}" > "${sample_name}.all.bam"
+      samtools view -H -b "${reads_unmapped_bam}" > "${sample_name}.mapped.bam"
 
+      samtools index "${sample_name}.all.bam" "${sample_name}.all.bai"
+      samtools index "${sample_name}.mapped.bam" "${sample_name}.mapped.bai"
     fi
-    samtools index ${sample_name}.mapped.bam
 
     # collect figures of merit
     grep -v '^>' assembly.fasta | tr -d '\nNn' | wc -c | tee assembly_length_unambiguous
@@ -112,7 +115,7 @@ task assembly__align_reads {
     samtools view -h -F 260 ${sample_name}.all.bam | samtools flagstat - | tee ${sample_name}.all.bam.flagstat.txt
     grep properly ${sample_name}.all.bam.flagstat.txt | cut -f 1 -d ' ' | tee read_pairs_aligned
     samtools view ${sample_name}.mapped.bam | cut -f10 | tr -d '\n' | wc -c | tee bases_aligned
-    python -c "print (float("$(cat bases_aligned)")/"$(cat assembly_length_unambiguous)") if "$(cat assembly_length_unambiguous)">0 else 0" > mean_coverage
+    python -c "print (float("$(cat bases_aligned)")/"$(cat assembly_length_unambiguous)") if "$(cat assembly_length_unambiguous)">0 else print(0)" > mean_coverage
 
     # fastqc mapped bam
     reports.py fastqc ${sample_name}.mapped.bam ${sample_name}.mapped_fastqc.html --out_zip ${sample_name}.mapped_fastqc.zip
@@ -196,12 +199,13 @@ task reports__plot_coverage {
     fi
 
     # collect figures of merit
+    set +o pipefail # grep will exit 1 if it fails to find the pattern
     samtools view -H ${aligned_reads_bam} | perl -n -e'/^@SQ.*LN:(\d+)/ && print "$1\n"' |  python -c "import sys; print(sum(int(x) for x in sys.stdin))" | tee assembly_length
     # report only primary alignments 260=exclude unaligned reads and secondary mappings
     samtools view -h -F 260 ${aligned_reads_bam} | samtools flagstat - | tee ${sample_name}.flagstat.txt
     grep properly ${sample_name}.flagstat.txt | cut -f 1 -d ' ' | tee read_pairs_aligned
     samtools view ${aligned_reads_bam} | cut -f10 | tr -d '\n' | wc -c | tee bases_aligned
-    python -c "print (float("$(cat bases_aligned)")/"$(cat assembly_length)") if "$(cat assembly_length)">0 else 0" > mean_coverage
+    python -c "print (float("$(cat bases_aligned)")/"$(cat assembly_length)") if "$(cat assembly_length)">0 else print(0)" > mean_coverage
   }
 
   output {
