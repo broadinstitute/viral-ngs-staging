@@ -76,14 +76,14 @@ task nextstrain__export_auspice_json {
         fi
         cat $VALS >> exportargs
 
-        cat exportargs | tr '\n' '\0' | xargs -0 -t augur export v2 \
+        (export AUGUR_RECURSION_LIMIT=10000; cat exportargs | tr '\n' '\0' | xargs -0 -t augur export v2 \
             --tree ~{tree} \
             ~{"--metadata " + sample_metadata} \
             --auspice-config ~{auspice_config} \
             ~{"--lat-longs " + lat_longs_tsv} \
             ~{"--colors " + colors_tsv} \
             ~{"--description_md " + description_md} \
-            --output ~{out_basename}_auspice.json
+            --output ~{out_basename}_auspice.json)
     }
     runtime {
         docker: docker
