@@ -15,6 +15,7 @@ workflow build_augur_tree {
         String          virus
         File            ref_fasta
         File            genbank_gb
+        File?           clades_tsv
         Array[String]?  ancestral_traits_to_infer
     }
 
@@ -40,6 +41,10 @@ workflow build_augur_tree {
         }
         ancestral_traits_to_infer: {
           description: "A list of metadata traits to use for ancestral node inference (see https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/traits.html). Multiple traits may be specified; must correspond exactly to column headers in metadata file. Omitting these values will skip ancestral trait inference, and ancestral nodes will not have estimated values for metadata."
+        }
+        clades_tsv: {
+          description: "A TSV file containing clade mutation positions in four columns: [clade  gene    site    alt]; see: https://nextstrain.org/docs/tutorials/defining-clades",
+          patterns: ["*.tsv"]
         }
     }
 
@@ -88,6 +93,16 @@ workflow build_augur_tree {
             nt_muts        = ancestral_tree.nt_muts_json,
             genbank_gb     = genbank_gb
     }
+    if(defined(clades_tsv)) {
+        call nextstrain__assign_clades_to_nodes as assign_clades_to_nodes {
+            input:
+                tree_nwk     = refine_augur_tree.tree_refined,
+                nt_muts_json = ancestral_tree.nt_muts_json,
+                aa_muts_json = translate_augur_tree.aa_muts_json,
+                ref_fasta    = ref_fasta,
+                clades_tsv   = select_first([clades_tsv])
+        }
+    }
     call nextstrain__export_auspice_json as export_auspice_json {
         input:
             tree            = refine_augur_tree.tree_refined,
@@ -96,7 +111,8 @@ workflow build_augur_tree {
                                 refine_augur_tree.branch_lengths,
                                 ancestral_traits.node_data_json,
                                 ancestral_tree.nt_muts_json,
-                                translate_augur_tree.aa_muts_json])
+                                translate_augur_tree.aa_muts_json,
+                                assign_clades_to_nodes.node_clade_data_json])
     }
 
     output {
@@ -108,6 +124,7 @@ workflow build_augur_tree {
         File  json_nt_muts               = ancestral_tree.nt_muts_json
         File  ancestral_sequences_fasta  = ancestral_tree.sequences
         File  json_aa_muts               = translate_augur_tree.aa_muts_json
+        File? node_clade_data_json       = assign_clades_to_nodes.node_clade_data_json
         File? json_ancestral_traits      = ancestral_traits.node_data_json
         File  auspice_input_json         = export_auspice_json.virus_json
     }
@@ -437,6 +454,46 @@ task nextstrain__translate_augur_tree {
     output {
         File aa_muts_json = "~{basename}_aa_muts.json"
         String augur_version = read_string("VERSION")
+    }
+}
+
+
+
+
+task nextstrain__assign_clades_to_nodes {
+    meta {
+        description: "Assign taxonomic clades to tree nodes based on mutation information"
+    }
+    input {
+        File tree_nwk
+        File nt_muts_json
+        File aa_muts_json
+        File ref_fasta
+        File clades_tsv
+
+        String docker = "nextstrain/base:build-20200506T095107Z"
+    }
+    String out_basename = basename(basename(tree_nwk, ".nwk"), "_refined_tree")
+    command {
+        augur version > VERSION
+        augur clades \
+        --tree ~{tree_nwk} \
+        --mutations ~{nt_muts_json} ~{aa_muts_json} \
+        --reference ~{ref_fasta} \
+        --clades ~{clades_tsv} \
+        --output-node-data ~{out_basename}_node-clade-assignments.json
+    }
+    runtime {
+        docker: docker
+        memory: "3 GB"
+        cpu :   2
+        disks:  "local-disk 50 HDD"
+        dx_instance_type: "mem1_ssd1_v2_x2"
+        preemptible: 2
+    }
+    output {
+        File node_clade_data_json = "~{out_basename}_node-clade-assignments.json"
+        String augur_version      = read_string("VERSION")
     }
 }
 
