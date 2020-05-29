@@ -23,7 +23,7 @@ task read_utils__merge_and_reheader_bams {
       File?           reheader_table
       String          out_basename
 
-      String          docker="quay.io/broadinstitute/viral-core:2.0.21"
+      String          docker="quay.io/broadinstitute/viral-core:2.1.0"
     }
 
     command {

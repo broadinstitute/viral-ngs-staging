@@ -56,7 +56,7 @@ task assembly__align_reads {
     String?  aligner_options
     Boolean? skip_mark_dupes=false
 
-    String   docker="quay.io/broadinstitute/viral-core:2.0.21"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.0"
 
     String   sample_name = basename(basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt"), ".clean")
   }
@@ -160,7 +160,7 @@ task reports__plot_coverage {
     Boolean? bin_large_plots=false
     String?  binning_summary_statistic="max" # max or min
 
-    String   docker="quay.io/broadinstitute/viral-core:2.0.21"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.0"
   }
   
   command {

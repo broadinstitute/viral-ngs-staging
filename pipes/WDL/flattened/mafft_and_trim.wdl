@@ -31,7 +31,7 @@ task interhost__multi_align_mafft {
     Float?         mafft_gapOpeningPenalty
 
     Int?           machine_mem_gb
-    String         docker="quay.io/broadinstitute/viral-phylo:2.0.21.5"
+    String         docker="quay.io/broadinstitute/viral-phylo:2.1.0.0"
   }
 
   command {
