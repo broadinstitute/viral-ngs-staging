@@ -176,7 +176,7 @@ task assembly__align_reads {
     String?  aligner_options
     Boolean? skip_mark_dupes=false
 
-    String   docker="quay.io/broadinstitute/viral-core:2.0.21"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.0"
 
     String   sample_name = basename(basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt"), ".clean")
   }
@@ -336,7 +336,7 @@ task read_utils__merge_and_reheader_bams {
       File?           reheader_table
       String          out_basename
 
-      String          docker="quay.io/broadinstitute/viral-core:2.0.21"
+      String          docker="quay.io/broadinstitute/viral-core:2.1.0"
     }
 
     command {
@@ -399,7 +399,7 @@ task reports__plot_coverage {
     Boolean? bin_large_plots=false
     String?  binning_summary_statistic="max" # max or min
 
-    String   docker="quay.io/broadinstitute/viral-core:2.0.21"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.0"
   }
   
   command {
@@ -585,7 +585,7 @@ task assembly__refine_assembly_with_aligned_reads {
       Int?     min_coverage=3
 
       Int?     machine_mem_gb
-      String   docker="quay.io/broadinstitute/viral-assemble:2.0.21.0"
+      String   docker="quay.io/broadinstitute/viral-assemble:2.1.0.0"
     }
 
     parameter_meta {

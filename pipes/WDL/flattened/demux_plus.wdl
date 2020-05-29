@@ -121,7 +121,7 @@ task demux__illumina_demux {
     Boolean? forceGC=true
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.0.21"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.0"
   }
 
   command {
@@ -334,7 +334,7 @@ task reports__align_and_count {
     Int?    topNHits = 3
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.0.21"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.0"
   }
 
   String  reads_basename=basename(reads_bam, ".bam")
@@ -389,7 +389,7 @@ task taxon_filter__deplete_taxa {
 
     Int?         cpu=8
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-classify:2.0.21.3"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.0.0"
   }
 
   parameter_meta {
@@ -493,7 +493,7 @@ task assembly__assemble {
       String   sample_name = basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt")
 
       Int?     machine_mem_gb
-      String   docker="quay.io/broadinstitute/viral-assemble:2.0.21.0"
+      String   docker="quay.io/broadinstitute/viral-assemble:2.1.0.0"
     }
 
     command {
@@ -687,7 +687,7 @@ task metagenomics__krakenuniq {
     File        krona_taxonomy_db_tgz  # taxonomy.tab
 
     Int?        machine_mem_gb
-    String      docker="quay.io/broadinstitute/viral-classify:2.0.21.3"
+    String      docker="quay.io/broadinstitute/viral-classify:2.1.0.0"
   }
 
   parameter_meta {
@@ -806,22 +806,20 @@ task reports__align_and_count_summary {
   input {
     Array[File]+  counts_txt
 
-    String        docker="quay.io/broadinstitute/viral-core:2.0.21"
+    String?       output_prefix="count_summary"
+
+    String        docker="quay.io/broadinstitute/viral-core:2.1.0"
   }
 
   command {
     set -ex -o pipefail
 
-    mkdir spike_summaries
-    cp ${sep=' ' counts_txt} spike_summaries/
-
     reports.py --version | tee VERSION
-    reports.py aggregate_spike_count spike_summaries/ count_summary.tsv \
-      --loglevel=DEBUG
+    reports.py aggregate_alignment_counts ${sep=' ' counts_txt} "${output_prefix}".tsv --loglevel=DEBUG
   }
 
   output {
-    File   count_summary    = "count_summary.tsv"
+    File   count_summary    = "${output_prefix}.tsv"
     String viralngs_version = read_string("VERSION")
   }
 
@@ -844,7 +842,7 @@ task reports__aggregate_metagenomics_reports {
     String       aggregate_taxlevel_focus                 = "species"
     Int?         aggregate_top_N_hits                     = 5
 
-    String       docker="quay.io/broadinstitute/viral-classify:2.0.21.3"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.0.0"
   }
 
   parameter_meta {
