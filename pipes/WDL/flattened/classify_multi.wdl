@@ -430,11 +430,16 @@ task metagenomics__filter_bam_to_taxa {
 
     touch taxfilterargs
     TAXNAMELIST="${write_lines(select_first([taxonomic_names, []]))}"
-    if [ -n "$(cat $TAXNAMELIST)" ]; then echo "--taxNames" >> taxfilterargs; fi
+    if [ -n "$(cat $TAXNAMELIST)" ]; then
+      echo "--taxNames" >> taxfilterargs
+    fi
     cat $TAXNAMELIST >> taxfilterargs
 
-    TAX_IDs="${sep=' ' taxonomic_ids}"
-    if [ -n "$TAX_IDs" ]; then TAX_IDs="--taxIDs $TAX_IDs"; fi
+    TAXIDLIST="${write_lines(select_first([taxonomic_ids, []]))}"
+    if [ -n "$(cat $TAXIDLIST)" ]; then
+      echo "--taxIDs" >> taxfilterargs
+    fi
+    cat $TAXIDLIST >> taxfilterargs
 
     metagenomics.py --version | tee VERSION
 
@@ -446,7 +451,6 @@ task metagenomics__filter_bam_to_taxa {
       "${out_basename}.bam" \
       nodes.dmp \
       names.dmp \
-      $TAX_IDs \
       ${true='--exclude' false='' exclude_taxa} \
       ${true='--without-children' false='' withoutChildren} \
       ${'--minimum_hit_groups=' + minimum_hit_groups} \
@@ -526,7 +530,7 @@ task read_utils__rmdup_ubam {
     memory: select_first([machine_mem_gb, 7]) + " GB"
     cpu:    2
     disks:  "local-disk 375 LOCAL"
-    dx_instance_type: "mem1_ssd1_v2_x2"
+    dx_instance_type: "mem2_ssd1_v2_x2"
   }
 }
 
