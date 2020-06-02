@@ -36,7 +36,7 @@ task ncbi_tools__Fetch_SRA_to_BAM {
         String  SRA_ID
 
         Int?    machine_mem_gb
-        String  docker = "quay.io/broadinstitute/ncbi-tools"
+        String  docker = "quay.io/broadinstitute/ncbi-tools:2.10.7.0"
     }
 
     command {
