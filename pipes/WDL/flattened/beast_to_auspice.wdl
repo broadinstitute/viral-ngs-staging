@@ -52,7 +52,7 @@ task nextstrain__augur_import_beast {
         String? tip_date_delimiter
 
         Int?    machine_mem_gb
-        String  docker = "nextstrain/base:build-20200506T095107Z"
+        String  docker = "nextstrain/base:build-20200529T044753Z"
     }
     String tree_basename = basename(beast_mcc_tree, ".tree")
     command {
@@ -103,7 +103,7 @@ task nextstrain__export_auspice_json {
         String?        title
 
         Int?   machine_mem_gb
-        String docker = "nextstrain/base:build-20200506T095107Z"
+        String docker = "nextstrain/base:build-20200529T044753Z"
     }
     String out_basename = basename(basename(tree, ".nwk"), "_refined_tree")
     command {

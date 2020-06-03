@@ -187,7 +187,7 @@ task nextstrain__filter_subsample_sequences {
         String?  include_where
 
         Int?     machine_mem_gb
-        String   docker = "nextstrain/base:build-20200506T095107Z"
+        String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     parameter_meta {
         sequences_fasta: {
@@ -251,7 +251,7 @@ task nextstrain__augur_mafft_align {
 
         Int?     machine_mem_gb
         Int?     disk_space_gb = 750
-        String   docker = "nextstrain/base:build-20200506T095107Z"
+        String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     command {
         augur version > VERSION
@@ -299,7 +299,7 @@ task nextstrain__draft_augur_tree {
 
         Int?     machine_mem_gb
         Int?     disk_space_gb = 750
-        String   docker = "nextstrain/base:build-20200506T095107Z"
+        String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     command {
         augur version > VERSION
@@ -357,7 +357,7 @@ task nextstrain__refine_augur_tree {
 
         Int?     machine_mem_gb
         Int?     disk_space_gb = 750
-        String   docker = "nextstrain/base:build-20200506T095107Z"
+        String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     command {
         augur version > VERSION
@@ -417,7 +417,7 @@ task nextstrain__ancestral_traits {
         Float?         sampling_bias_correction
 
         Int?     machine_mem_gb
-        String   docker = "nextstrain/base:build-20200506T095107Z"
+        String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     command {
         augur version > VERSION
@@ -463,7 +463,7 @@ task nextstrain__ancestral_tree {
         File?    output_vcf
 
         Int?     machine_mem_gb
-        String   docker = "nextstrain/base:build-20200506T095107Z"
+        String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     command {
         augur version > VERSION
@@ -512,7 +512,7 @@ task nextstrain__translate_augur_tree {
         File?  vcf_reference
 
         Int?   machine_mem_gb
-        String docker = "nextstrain/base:build-20200506T095107Z"
+        String docker = "nextstrain/base:build-20200529T044753Z"
     }
     command {
         augur version > VERSION
@@ -552,7 +552,7 @@ task nextstrain__assign_clades_to_nodes {
         File ref_fasta
         File clades_tsv
 
-        String docker = "nextstrain/base:build-20200506T095107Z"
+        String docker = "nextstrain/base:build-20200529T044753Z"
     }
     String out_basename = basename(basename(tree_nwk, ".nwk"), "_refined_tree")
     command {
@@ -600,7 +600,7 @@ task nextstrain__export_auspice_json {
         String?        title
 
         Int?   machine_mem_gb
-        String docker = "nextstrain/base:build-20200506T095107Z"
+        String docker = "nextstrain/base:build-20200529T044753Z"
     }
     String out_basename = basename(basename(tree, ".nwk"), "_refined_tree")
     command {
