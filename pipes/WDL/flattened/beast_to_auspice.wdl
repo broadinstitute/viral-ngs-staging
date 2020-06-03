@@ -149,7 +149,7 @@ task nextstrain__export_auspice_json {
             --auspice-config ~{auspice_config} \
             ~{"--lat-longs " + lat_longs_tsv} \
             ~{"--colors " + colors_tsv} \
-            ~{"--description_md " + description_md} \
+            ~{"--description " + description_md} \
             --output ~{out_basename}_auspice.json)
     }
     runtime {
