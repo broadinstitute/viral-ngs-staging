@@ -39,7 +39,7 @@ task nextstrain__filter_subsample_sequences {
         String?  include_where
 
         Int?     machine_mem_gb
-        String   docker = "nextstrain/base:build-20200506T095107Z"
+        String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     parameter_meta {
         sequences_fasta: {
