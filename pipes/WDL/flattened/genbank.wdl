@@ -131,7 +131,7 @@ task ncbi__biosample_to_genbank {
     Int   num_segments=1
     Int   taxid
 
-    String  docker="quay.io/broadinstitute/viral-phylo:2.1.0.0"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.1.1.0"
   }
   String base = basename(biosample_attributes, ".txt")
   command {
@@ -170,7 +170,7 @@ task ncbi__align_and_annot_transfer_single {
     Array[File]+ reference_fastas
     Array[File]+ reference_feature_tables
 
-    String  docker="quay.io/broadinstitute/viral-phylo:2.1.0.0"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.1.1.0"
   }
 
   parameter_meta {
@@ -239,7 +239,7 @@ task ncbi__prepare_genbank {
     String?      assembly_method_version
 
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-phylo:2.1.0.0"
+    String       docker="quay.io/broadinstitute/viral-phylo:2.1.1.0"
   }
 
   parameter_meta {
