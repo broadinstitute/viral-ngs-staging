@@ -294,6 +294,7 @@ task demux__illumina_demux {
       --JVMmemory="$mem_in_mb"m \
       $demux_threads \
       ${true='--force_gc=true' false="--force_gc=false" forceGC} \
+      --append_run_id \
       --compression_level=5 \
       --loglevel=DEBUG
 
