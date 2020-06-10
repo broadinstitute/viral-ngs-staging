@@ -90,7 +90,7 @@ task beast {
   input {
     File     beauti_xml
 
-    String   docker="quay.io/broadinstitute/beast-beagle-cuda:1.10.5"
+    String   docker="quay.io/broadinstitute/beast-beagle-cuda:1.10.5pre"
   }
 
   # TO DO: parameterize gpuType and gpuCount
