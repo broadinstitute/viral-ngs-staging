@@ -43,15 +43,15 @@ task nextstrain__filter_subsample_sequences {
     }
     parameter_meta {
         sequences_fasta: {
-          description: "Set of sequences in fasta format to subsample using augur filter. These must represent a single chromosome/segment of a genome only.",
-          patterns: ["*.fasta", "*.fa"]
+          description: "Set of sequences (unaligned fasta or aligned fasta -- one sequence per genome) or variants (vcf format) to subsample using augur filter.",
+          patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
         }
         sample_metadata_tsv: {
           description: "Metadata in tab-separated text format. See https://nextstrain-augur.readthedocs.io/en/stable/faq/metadata.html for details.",
           patterns: ["*.txt", "*.tsv"]
         }
     }
-    String in_basename = basename(sequences_fasta, ".fasta")
+    String out_fname = sub(sub(basename(sequences_fasta), ".vcf", ".filtered.vcf"), ".fasta$", ".filtered.fasta")
     command {
         augur version > VERSION
         augur filter \
@@ -69,23 +69,24 @@ task nextstrain__filter_subsample_sequences {
             ~{"--subsample-seed " + subsample_seed} \
             ~{"--exclude-where " + exclude_where} \
             ~{"--include-where " + include_where} \
-            --output "~{in_basename}.filtered.fasta"
-        cat ~{sequences_fasta} | grep \> | wc -l > IN_COUNT
-        cat ~{in_basename}.filtered.fasta | grep \> | wc -l > OUT_COUNT
+            --output "~{out_fname}" | tee STDOUT
+        #cat ~{sequences_fasta} | grep \> | wc -l > IN_COUNT
+        grep "sequences were dropped during filtering" STDOUT | cut -f 1 -d ' ' > DROP_COUNT
+        grep "sequences have been written out to" STDOUT | cut -f 1 -d ' ' > OUT_COUNT
     }
     runtime {
         docker: docker
-        memory: "4 GB"
-        cpu :   2
-        disks:  "local-disk 375 LOCAL"
+        memory: "3 GB"
+        cpu :   1
+        disks:  "local-disk 100 HDD"
         dx_instance_type: "mem1_ssd1_v2_x2"
         preemptible: 1
     }
     output {
-        File   filtered_fasta = "~{in_basename}.filtered.fasta"
-        String augur_version  = read_string("VERSION")
-        Int    sequences_in   = read_int("IN_COUNT")
-        Int    sequences_out  = read_int("OUT_COUNT")
+        File   filtered_fasta    = out_fname
+        String augur_version     = read_string("VERSION")
+        Int    sequences_dropped = read_int("DROP_COUNT")
+        Int    sequences_out     = read_int("OUT_COUNT")
     }
 }
 

@@ -2,7 +2,7 @@ version 1.0
 
 
 
-workflow newick_to_auspice {
+workflow augur_from_newick {
     meta {
         description: "Convert a newick formatted phylogenetic tree into a json suitable for auspice visualization. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/export.html"
         author: "Broad Viral Genomics"
@@ -84,6 +84,7 @@ task nextstrain__export_auspice_json {
             ~{"--colors " + colors_tsv} \
             ~{"--description " + description_md} \
             --output ~{out_basename}_auspice.json)
+        cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
@@ -94,7 +95,8 @@ task nextstrain__export_auspice_json {
         preemptible: 2
     }
     output {
-        File virus_json = "~{out_basename}_auspice.json"
+        File   virus_json = "~{out_basename}_auspice.json"
+        Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         String augur_version = read_string("VERSION")
     }
 }

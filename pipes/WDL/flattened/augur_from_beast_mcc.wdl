@@ -2,7 +2,7 @@ version 1.0
 
 
 
-workflow beast_to_auspice {
+workflow augur_from_beast_mcc {
     meta {
         description: "Visualize BEAST output with Nextstrain. This workflow converts a BEAST MCC tree (.tree file) into an Auspice v2 json file. See https://nextstrain-augur.readthedocs.io/en/stable/faq/import-beast.html for details."
         author: "Broad Viral Genomics"
@@ -65,6 +65,7 @@ task nextstrain__augur_import_beast {
             ~{"--tip-date-regex " + tip_date_regex} \
             ~{"--tip-date-format " + tip_date_format} \
             ~{"--tip-date-delimeter " + tip_date_delimiter}
+        Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
     }
     runtime {
         docker: docker
@@ -75,8 +76,9 @@ task nextstrain__augur_import_beast {
         preemptible: 2
     }
     output {
-        File tree_newick    = "~{tree_basename}.nwk"
-        File node_data_json = "~{tree_basename}.json"
+        File   tree_newick    = "~{tree_basename}.nwk"
+        File   node_data_json = "~{tree_basename}.json"
+        Int    max_ram_gb = ceil(read_float("/sys/fs/cgroup/memory/memory.max_usage_in_bytes")/1000000000)
         String augur_version = read_string("VERSION")
     }
 }
@@ -151,6 +153,7 @@ task nextstrain__export_auspice_json {
             ~{"--colors " + colors_tsv} \
             ~{"--description " + description_md} \
             --output ~{out_basename}_auspice.json)
+        cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
@@ -161,7 +164,8 @@ task nextstrain__export_auspice_json {
         preemptible: 2
     }
     output {
-        File virus_json = "~{out_basename}_auspice.json"
+        File   virus_json = "~{out_basename}_auspice.json"
+        Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         String augur_version = read_string("VERSION")
     }
 }

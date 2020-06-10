@@ -2,15 +2,15 @@ version 1.0
 
 
 
-workflow build_augur_tree {
+workflow augur_from_msa {
     meta {
-        description: "Align assemblies, build trees, and convert to json representation suitable for Nextstrain visualization. See https://nextstrain.org/docs/getting-started/ and https://nextstrain-augur.readthedocs.io/en/stable/"
+        description: "Build trees, and convert to json representation suitable for Nextstrain visualization. See https://nextstrain.org/docs/getting-started/ and https://nextstrain-augur.readthedocs.io/en/stable/"
         author: "Broad Viral Genomics"
         email:  "viral-ngs@broadinstitute.org"
     }
 
     input {
-        Array[File]     assembly_fastas
+        File            msa_or_vcf
         File            sample_metadata
         String          virus
         File            ref_fasta
@@ -20,9 +20,9 @@ workflow build_augur_tree {
     }
 
     parameter_meta {
-        assembly_fastas: {
-          description: "Set of assembled genomes to align and build trees. These must represent a single chromosome/segment of a genome only. Fastas may be one-sequence-per-individual or a concatenated multi-fasta (unaligned) or a mixture of the two. Fasta header records need to be pipe-delimited (|) for each metadata value.",
-          patterns: ["*.fasta", "*.fa"]
+        msa_or_vcf: {
+          description: "Multiple sequence alignment (aligned fasta) or variants (vcf format).",
+          patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
         }
         sample_metadata: {
           description: "Metadata in tab-separated text format. See https://nextstrain-augur.readthedocs.io/en/stable/faq/metadata.html for details.",
@@ -48,25 +48,9 @@ workflow build_augur_tree {
         }
     }
 
-    call nextstrain__concatenate as concatenate {
-        input:
-            infiles     = assembly_fastas,
-            output_name = "all_samples_combined_assembly.fasta"
-    }
-    call nextstrain__filter_subsample_sequences as filter_subsample_sequences {
-            input:
-                sequences_fasta     = concatenate.combined,
-                sample_metadata_tsv = sample_metadata
-    }
-    call nextstrain__augur_mafft_align as augur_mafft_align {
-        input:
-            sequences = filter_subsample_sequences.filtered_fasta,
-            ref_fasta = ref_fasta,
-            basename  = virus
-    }
     call nextstrain__augur_mask_sites as augur_mask_sites {
         input:
-            sequences = augur_mafft_align.aligned_sequences
+            sequences = msa_or_vcf
     }
     call nextstrain__draft_augur_tree as draft_augur_tree {
         input:
@@ -125,8 +109,6 @@ workflow build_augur_tree {
     }
 
     output {
-        File  combined_assembly_fasta    = concatenate.combined
-        File  augur_aligned_fasta        = augur_mafft_align.aligned_sequences
         File  masked_fasta               = augur_mask_sites.masked_sequences
         File  raw_tree                   = draft_augur_tree.aligned_tree
         File  refined_tree               = refine_augur_tree.tree_refined
@@ -139,158 +121,6 @@ workflow build_augur_tree {
         File  auspice_input_json         = export_auspice_json.virus_json
     }
 }
-
-
-
-task nextstrain__concatenate {
-    meta {
-        description: "This is nothing more than unix cat."
-    }
-    input {
-        Array[File] infiles
-        String      output_name
-    }
-    command {
-        cat ~{sep=" " infiles} > "${output_name}"
-    }
-    runtime {
-        docker: "ubuntu"
-        memory: "1 GB"
-        cpu:    1
-        disks: "local-disk 375 LOCAL"
-        dx_instance_type: "mem1_ssd1_v2_x2"
-    }
-    output {
-        File combined = "${output_name}"
-    }
-}
-
-
-
-
-task nextstrain__filter_subsample_sequences {
-    meta {
-        description: "Filter and subsample a sequence set. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/filter.html"
-    }
-    input {
-        File     sequences_fasta
-        File     sample_metadata_tsv
-
-        Int?     sequences_per_group
-        String?  group_by
-        File?    include
-        File?    exclude
-
-        Boolean  non_nucleotide=true
-
-        String?  min_date
-        String?  max_date
-        Int?     min_length
-        File?    priority
-        Int?     subsample_seed
-        String?  exclude_where
-        String?  include_where
-
-        Int?     machine_mem_gb
-        String   docker = "nextstrain/base:build-20200529T044753Z"
-    }
-    parameter_meta {
-        sequences_fasta: {
-          description: "Set of sequences (unaligned fasta or aligned fasta -- one sequence per genome) or variants (vcf format) to subsample using augur filter.",
-          patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
-        }
-        sample_metadata_tsv: {
-          description: "Metadata in tab-separated text format. See https://nextstrain-augur.readthedocs.io/en/stable/faq/metadata.html for details.",
-          patterns: ["*.txt", "*.tsv"]
-        }
-    }
-    String out_fname = sub(sub(basename(sequences_fasta), ".vcf", ".filtered.vcf"), ".fasta$", ".filtered.fasta")
-    command {
-        augur version > VERSION
-        augur filter \
-            --sequences ~{sequences_fasta} \
-            --metadata ~{sample_metadata_tsv} \
-            ~{"--min-date " + min_date} \
-            ~{"--max-date " + max_date} \
-            ~{"--min-length " + min_length} \
-            ~{true="--non-nucleotide " false=""  non_nucleotide} \
-            ~{"--exclude " + exclude} \
-            ~{"--include " + include} \
-            ~{"--priority " + priority} \
-            ~{"--sequences-per-group " + sequences_per_group} \
-            ~{"--group-by " + group_by} \
-            ~{"--subsample-seed " + subsample_seed} \
-            ~{"--exclude-where " + exclude_where} \
-            ~{"--include-where " + include_where} \
-            --output "~{out_fname}" | tee STDOUT
-        #cat ~{sequences_fasta} | grep \> | wc -l > IN_COUNT
-        grep "sequences were dropped during filtering" STDOUT | cut -f 1 -d ' ' > DROP_COUNT
-        grep "sequences have been written out to" STDOUT | cut -f 1 -d ' ' > OUT_COUNT
-    }
-    runtime {
-        docker: docker
-        memory: "3 GB"
-        cpu :   1
-        disks:  "local-disk 100 HDD"
-        dx_instance_type: "mem1_ssd1_v2_x2"
-        preemptible: 1
-    }
-    output {
-        File   filtered_fasta    = out_fname
-        String augur_version     = read_string("VERSION")
-        Int    sequences_dropped = read_int("DROP_COUNT")
-        Int    sequences_out     = read_int("OUT_COUNT")
-    }
-}
-
-
-
-
-task nextstrain__augur_mafft_align {
-    meta {
-        description: "Align multiple sequences from FASTA. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/align.html"
-    }
-    input {
-        File     sequences
-        File     ref_fasta
-        String   basename
-
-        File?    existing_alignment
-        Boolean  fill_gaps = true
-        Boolean  remove_reference = true
-
-        Int?     machine_mem_gb
-        Int?     disk_space_gb = 750
-        String   docker = "nextstrain/base:build-20200529T044753Z"
-    }
-    command {
-        augur version > VERSION
-        augur align --sequences ~{sequences} \
-            --reference-sequence ~{ref_fasta} \
-            --output ~{basename}_aligned.fasta \
-            ~{true="--fill-gaps" false="" fill_gaps} \
-            ~{"--existing-alignment " + existing_alignment} \
-            ~{true="--remove-reference" false="" remove_reference} \
-            --debug \
-            --nthreads auto
-        cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
-    }
-    runtime {
-        docker: docker
-        memory: select_first([machine_mem_gb, 104]) + " GB"
-        cpu :   16
-        disks:  "local-disk ${disk_space_gb} LOCAL"
-        preemptible: 0
-        dx_instance_type: "mem3_ssd2_v2_x16"
-    }
-    output {
-        File   aligned_sequences = "~{basename}_aligned.fasta"
-        File   align_troubleshoot = stdout()
-        Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
-        String augur_version = read_string("VERSION")
-    }
-}
-
 
 
 
