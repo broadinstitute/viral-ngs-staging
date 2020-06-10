@@ -21,7 +21,7 @@ task reports__align_and_count {
     Int?    topNHits = 3
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.1.0"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.1"
   }
 
   String  reads_basename=basename(reads_bam, ".bam")
