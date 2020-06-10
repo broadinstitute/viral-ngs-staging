@@ -121,7 +121,7 @@ task demux__illumina_demux {
     Boolean? forceGC=true
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.1.0"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.1"
   }
 
   command {
@@ -255,6 +255,7 @@ task demux__illumina_demux {
       --JVMmemory="$mem_in_mb"m \
       $demux_threads \
       ${true='--force_gc=true' false="--force_gc=false" forceGC} \
+      --append_run_id \
       --compression_level=5 \
       --loglevel=DEBUG
 
@@ -334,7 +335,7 @@ task reports__align_and_count {
     Int?    topNHits = 3
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.1.0"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.1"
   }
 
   String  reads_basename=basename(reads_bam, ".bam")
@@ -389,7 +390,7 @@ task taxon_filter__deplete_taxa {
 
     Int?         cpu=8
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.0.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.1.0"
   }
 
   parameter_meta {
@@ -493,7 +494,7 @@ task assembly__assemble {
       String   sample_name = basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt")
 
       Int?     machine_mem_gb
-      String   docker="quay.io/broadinstitute/viral-assemble:2.1.0.0"
+      String   docker="quay.io/broadinstitute/viral-assemble:2.1.1.0"
     }
 
     command {
@@ -687,7 +688,7 @@ task metagenomics__krakenuniq {
     File        krona_taxonomy_db_tgz  # taxonomy.tab
 
     Int?        machine_mem_gb
-    String      docker="quay.io/broadinstitute/viral-classify:2.1.0.0"
+    String      docker="quay.io/broadinstitute/viral-classify:2.1.1.0"
   }
 
   parameter_meta {
@@ -808,7 +809,7 @@ task reports__align_and_count_summary {
 
     String?       output_prefix="count_summary"
 
-    String        docker="quay.io/broadinstitute/viral-core:2.1.0"
+    String        docker="quay.io/broadinstitute/viral-core:2.1.1"
   }
 
   command {
@@ -842,7 +843,7 @@ task reports__aggregate_metagenomics_reports {
     String       aggregate_taxlevel_focus                 = "species"
     Int?         aggregate_top_N_hits                     = 5
 
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.0.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.1.0"
   }
 
   parameter_meta {

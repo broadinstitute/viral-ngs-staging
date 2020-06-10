@@ -26,7 +26,7 @@ task metagenomics__filter_bam_to_taxa {
     Boolean        exclude_taxa=false
     String         out_filename_suffix = "filtered"
 
-    String         docker="quay.io/broadinstitute/viral-classify:2.1.0.0"
+    String         docker="quay.io/broadinstitute/viral-classify:2.1.1.0"
   }
 
   String out_basename = basename(classified_bam, ".bam") + "." + out_filename_suffix

@@ -45,7 +45,7 @@ task tasks_demux__illumina_demux {
     Boolean? forceGC=true
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.1.0"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.1"
   }
 
   command {
@@ -179,6 +179,7 @@ task tasks_demux__illumina_demux {
       --JVMmemory="$mem_in_mb"m \
       $demux_threads \
       ${true='--force_gc=true' false="--force_gc=false" forceGC} \
+      --append_run_id \
       --compression_level=5 \
       --loglevel=DEBUG
 
