@@ -436,7 +436,7 @@ task taxon_filter__deplete_taxa {
 
     Int?         cpu=8
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
   }
 
   parameter_meta {
@@ -692,7 +692,7 @@ task metagenomics__kraken2 {
     Int?     min_base_qual
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
   }
 
   parameter_meta {
@@ -805,7 +805,7 @@ task metagenomics__blastx {
     File     krona_taxonomy_db_tgz
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
   }
 
   parameter_meta {
@@ -1021,7 +1021,7 @@ task reports__aggregate_metagenomics_reports {
     String       aggregate_taxlevel_focus                 = "species"
     Int?         aggregate_top_N_hits                     = 5
 
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
   }
 
   parameter_meta {

@@ -267,7 +267,7 @@ task metagenomics__kraken2 {
     Int?     min_base_qual
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
   }
 
   parameter_meta {
@@ -381,7 +381,7 @@ task metagenomics__filter_bam_to_taxa {
     Boolean        exclude_taxa=false
     String         out_filename_suffix = "filtered"
 
-    String         docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
+    String         docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
   }
 
   String out_basename = basename(classified_bam, ".bam") + "." + out_filename_suffix
@@ -746,7 +746,7 @@ task reports__aggregate_metagenomics_reports {
     String       aggregate_taxlevel_focus                 = "species"
     Int?         aggregate_top_N_hits                     = 5
 
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
   }
 
   parameter_meta {
@@ -802,7 +802,7 @@ task metagenomics__krona {
     Int?     magnitude_column
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
   }
 
   command {
