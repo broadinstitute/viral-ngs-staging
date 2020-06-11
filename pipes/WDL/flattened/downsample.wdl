@@ -25,7 +25,7 @@ task reads__downsample_bams {
     Boolean?     deduplicateAfter=false
 
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-core:2.1.1"
+    String       docker="quay.io/broadinstitute/viral-core:2.1.3"
   }
 
   command {

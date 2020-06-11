@@ -176,7 +176,7 @@ task reports__fastqc {
   input {
     File     reads_bam
 
-    String   docker="quay.io/broadinstitute/viral-core:2.1.1"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.3"
   }
 
   String   reads_basename=basename(reads_bam, ".bam")
@@ -213,7 +213,7 @@ task reports__align_and_count {
     Int?    topNHits = 3
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.1.1"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.3"
   }
 
   String  reads_basename=basename(reads_bam, ".bam")
@@ -267,7 +267,7 @@ task metagenomics__kraken2 {
     Int?     min_base_qual
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.1.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
   }
 
   parameter_meta {
@@ -381,7 +381,7 @@ task metagenomics__filter_bam_to_taxa {
     Boolean        exclude_taxa=false
     String         out_filename_suffix = "filtered"
 
-    String         docker="quay.io/broadinstitute/viral-classify:2.1.1.0"
+    String         docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
   }
 
   String out_basename = basename(classified_bam, ".bam") + "." + out_filename_suffix
@@ -462,7 +462,7 @@ task read_utils__rmdup_ubam {
     String   method="mvicuna"
 
     Int?     machine_mem_gb
-    String?  docker="quay.io/broadinstitute/viral-core:2.1.1"
+    String?  docker="quay.io/broadinstitute/viral-core:2.1.3"
   }
 
   parameter_meta {
@@ -523,7 +523,7 @@ task assembly__assemble {
       String   sample_name = basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt")
 
       Int?     machine_mem_gb
-      String   docker="quay.io/broadinstitute/viral-assemble:2.1.1.0"
+      String   docker="quay.io/broadinstitute/viral-assemble:2.1.3.0"
     }
 
     command {
@@ -712,7 +712,7 @@ task reports__align_and_count_summary {
 
     String?       output_prefix="count_summary"
 
-    String        docker="quay.io/broadinstitute/viral-core:2.1.1"
+    String        docker="quay.io/broadinstitute/viral-core:2.1.3"
   }
 
   command {
@@ -746,7 +746,7 @@ task reports__aggregate_metagenomics_reports {
     String       aggregate_taxlevel_focus                 = "species"
     Int?         aggregate_top_N_hits                     = 5
 
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.1.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
   }
 
   parameter_meta {
@@ -802,7 +802,7 @@ task metagenomics__krona {
     Int?     magnitude_column
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.1.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
   }
 
   command {

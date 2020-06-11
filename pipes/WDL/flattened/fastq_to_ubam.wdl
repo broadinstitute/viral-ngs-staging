@@ -26,7 +26,7 @@ task tasks_read_utils__FastqToUBAM {
     String? platform_name
     String? sequencing_center
 
-    String  docker="quay.io/broadinstitute/viral-core:2.1.1"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.3"
   }
   parameter_meta {
     fastq_1: { description: "Unaligned read1 file in fastq format", patterns: ["*.fastq", "*.fastq.gz", "*.fq", "*.fq.gz"] }

@@ -22,7 +22,7 @@ task metagenomics__kaiju {
     File     krona_taxonomy_db_tgz  # taxonomy/taxonomy.tab
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.1.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.0"
   }
 
   String   input_basename = basename(reads_unmapped_bam, ".bam")
@@ -36,11 +36,15 @@ task metagenomics__kaiju {
     DB_DIR=$(mktemp -d --suffix _db)
     mkdir -p $DB_DIR/kaiju $DB_DIR/krona $DB_DIR/taxonomy
 
-    lz4 -d ${kaiju_db_lz4} $DB_DIR/kaiju_db/kaiju.fmi
+    lz4 -dc ${kaiju_db_lz4} > $DB_DIR/kaiju/kaiju.fmi
 
     read_utils.py extract_tarball \
       ${ncbi_taxonomy_db_tgz} $DB_DIR/taxonomy \
       --loglevel=DEBUG
+    # Support old db tar format
+    if [ -d "$DB_DIR/taxonomy/taxonomy" ]; then
+      mv $DB_DIR/taxonomy/taxonomy/* $DB_DIR/taxonomy
+    fi
 
     read_utils.py extract_tarball \
       ${krona_taxonomy_db_tgz} $DB_DIR/krona \

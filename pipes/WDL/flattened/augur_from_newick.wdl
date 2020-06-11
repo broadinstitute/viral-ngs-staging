@@ -35,7 +35,7 @@ task nextstrain__export_auspice_json {
         Array[String]? maintainers
         String?        title
 
-        String docker = "nextstrain/base:build-20200529T044753Z"
+        String docker = "nextstrain/base:build-20200608T223413Z"
     }
     String out_basename = basename(basename(tree, ".nwk"), "_refined_tree")
     command {

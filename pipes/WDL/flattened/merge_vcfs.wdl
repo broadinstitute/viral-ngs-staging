@@ -18,7 +18,7 @@ task interhost__merge_vcfs_gatk {
     File        ref_fasta
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-phylo:2.1.1.0"
+    String   docker="quay.io/broadinstitute/viral-phylo:2.1.3.1"
 
     String   output_prefix = "merged"
   }
