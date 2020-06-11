@@ -151,19 +151,23 @@ task nextstrain__augur_mask_sites {
         else
             cp "~{sequences}" "~{out_fname}"
         fi
+        cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
+        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: "3 GB"
-        cpu :   2
+        memory: "2 GB"
+        cpu :   1
         disks:  "local-disk 100 HDD"
-        preemptible: 2
+        preemptible: 1
         dx_instance_type: "mem1_ssd1_v2_x2"
     }
     output {
         File   masked_sequences = out_fname
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
+        Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
+        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
         String augur_version  = read_string("VERSION")
     }
 }
@@ -185,8 +189,6 @@ task nextstrain__draft_augur_tree {
         File?    vcf_reference
         String?  tree_builder_args
 
-        Int?     machine_mem_gb
-        Int?     disk_space_gb = 750
         String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     parameter_meta {
@@ -211,10 +213,10 @@ task nextstrain__draft_augur_tree {
     }
     runtime {
         docker: docker
-        memory: select_first([machine_mem_gb, 30]) + " GB"
-        cpu :   16
-        disks:  "local-disk ${disk_space_gb} LOCAL"
-        dx_instance_type: "mem1_ssd1_v2_x16"
+        memory: "16 GB"
+        cpu :   32
+        disks:  "local-disk 750 LOCAL"
+        dx_instance_type: "mem1_ssd1_v2_x36"
         preemptible: 0
     }
     output {
@@ -255,8 +257,6 @@ task nextstrain__refine_augur_tree {
         String?  divergence_units
         File?    vcf_reference
 
-        Int?     machine_mem_gb
-        Int?     disk_space_gb = 750
         String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     parameter_meta {
@@ -295,10 +295,10 @@ task nextstrain__refine_augur_tree {
     }
     runtime {
         docker: docker
-        memory: select_first([machine_mem_gb, 30]) + " GB"
-        cpu :   16
-        disks: "local-disk ${disk_space_gb} LOCAL"
-        dx_instance_type: "mem1_ssd1_v2_x16"
+        memory: "13 GB"
+        cpu :   2
+        disks:  "local-disk 100 HDD"
+        dx_instance_type: "mem3_ssd1_v2_x2"
         preemptible: 0
     }
     output {
@@ -328,7 +328,6 @@ task nextstrain__ancestral_traits {
         File?          weights
         Float?         sampling_bias_correction
 
-        Int?     machine_mem_gb
         String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     command {
@@ -339,20 +338,25 @@ task nextstrain__ancestral_traits {
             --columns ~{sep=" " columns} \
             --output-node-data "~{basename}_nodes.json" \
             ~{"--weights " + weights} \
+            ~{"--sampling-bias-correction " + sampling_bias_correction} \
             ~{true="--confidence" false="" confidence}
+        cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
+        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: select_first([machine_mem_gb, 3]) + " GB"
-        cpu :   2
-        disks: "local-disk 50 HDD"
+        memory: "2 GB"
+        cpu :   1
+        disks:  "local-disk 50 HDD"
         dx_instance_type: "mem1_ssd1_v2_x2"
-        preemptible: 2
+        preemptible: 1
     }
     output {
         File   node_data_json = "~{basename}_nodes.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
+        Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
+        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
         String augur_version = read_string("VERSION")
     }
 }
@@ -376,7 +380,6 @@ task nextstrain__ancestral_tree {
         File?    vcf_reference
         File?    output_vcf
 
-        Int?     machine_mem_gb
         String   docker = "nextstrain/base:build-20200529T044753Z"
     }
     parameter_meta {
@@ -404,11 +407,11 @@ task nextstrain__ancestral_tree {
     }
     runtime {
         docker: docker
-        memory: select_first([machine_mem_gb, 7]) + " GB"
-        cpu :   4
-        disks: "local-disk 50 HDD"
-        dx_instance_type: "mem1_ssd1_v2_x4"
-        preemptible: 2
+        memory: "13 GB"
+        cpu :   2
+        disks:  "local-disk 50 HDD"
+        dx_instance_type: "mem3_ssd1_v2_x2"
+        preemptible: 1
     }
     output {
         File   nt_muts_json = "~{basename}_nt_muts.json"
@@ -437,7 +440,6 @@ task nextstrain__translate_augur_tree {
         File?  vcf_reference_output
         File?  vcf_reference
 
-        Int?   machine_mem_gb
         String docker = "nextstrain/base:build-20200529T044753Z"
     }
     command {
@@ -453,11 +455,11 @@ task nextstrain__translate_augur_tree {
     }
     runtime {
         docker: docker
-        memory: select_first([machine_mem_gb, 3]) + " GB"
-        cpu :   2
+        memory: "2 GB"
+        cpu :   1
         disks:  "local-disk 50 HDD"
         dx_instance_type: "mem1_ssd1_v2_x2"
-        preemptible: 2
+        preemptible: 1
     }
     output {
         File   aa_muts_json = "~{basename}_aa_muts.json"
@@ -495,11 +497,11 @@ task nextstrain__assign_clades_to_nodes {
     }
     runtime {
         docker: docker
-        memory: "3 GB"
-        cpu :   2
+        memory: "2 GB"
+        cpu :   1
         disks:  "local-disk 50 HDD"
         dx_instance_type: "mem1_ssd1_v2_x2"
-        preemptible: 2
+        preemptible: 1
     }
     output {
         File   node_clade_data_json = "~{out_basename}_node-clade-assignments.json"
@@ -529,7 +531,6 @@ task nextstrain__export_auspice_json {
         Array[String]? maintainers
         String?        title
 
-        Int?   machine_mem_gb
         String docker = "nextstrain/base:build-20200529T044753Z"
     }
     String out_basename = basename(basename(tree, ".nwk"), "_refined_tree")
@@ -578,19 +579,23 @@ task nextstrain__export_auspice_json {
             ~{"--colors " + colors_tsv} \
             ~{"--description " + description_md} \
             --output ~{out_basename}_auspice.json)
+        cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
+        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: select_first([machine_mem_gb, 3]) + " GB"
+        memory: "3 GB"
         cpu :   2
         disks:  "local-disk 100 HDD"
         dx_instance_type: "mem1_ssd1_v2_x2"
-        preemptible: 2
+        preemptible: 0
     }
     output {
         File   virus_json = "~{out_basename}_auspice.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
+        Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
+        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
         String augur_version = read_string("VERSION")
     }
 }

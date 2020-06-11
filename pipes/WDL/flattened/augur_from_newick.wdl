@@ -35,7 +35,6 @@ task nextstrain__export_auspice_json {
         Array[String]? maintainers
         String?        title
 
-        Int?   machine_mem_gb
         String docker = "nextstrain/base:build-20200529T044753Z"
     }
     String out_basename = basename(basename(tree, ".nwk"), "_refined_tree")
@@ -84,19 +83,23 @@ task nextstrain__export_auspice_json {
             ~{"--colors " + colors_tsv} \
             ~{"--description " + description_md} \
             --output ~{out_basename}_auspice.json)
+        cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
+        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: select_first([machine_mem_gb, 3]) + " GB"
+        memory: "3 GB"
         cpu :   2
         disks:  "local-disk 100 HDD"
         dx_instance_type: "mem1_ssd1_v2_x2"
-        preemptible: 2
+        preemptible: 0
     }
     output {
         File   virus_json = "~{out_basename}_auspice.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
+        Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
+        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
         String augur_version = read_string("VERSION")
     }
 }
