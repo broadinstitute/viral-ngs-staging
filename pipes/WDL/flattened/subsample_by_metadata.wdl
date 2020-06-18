@@ -52,6 +52,7 @@ task nextstrain__filter_subsample_sequences {
     }
     String out_fname = sub(sub(basename(sequences_fasta), ".vcf", ".filtered.vcf"), ".fasta$", ".filtered.fasta")
     command {
+        set -e
         augur version > VERSION
         augur filter \
             --sequences ~{sequences_fasta} \
@@ -73,15 +74,15 @@ task nextstrain__filter_subsample_sequences {
         grep "sequences were dropped during filtering" STDOUT | cut -f 1 -d ' ' > DROP_COUNT
         grep "sequences have been written out to" STDOUT | cut -f 1 -d ' ' > OUT_COUNT
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
+        cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
         memory: "3 GB"
-        cpu :   1
+        cpu :   4
         disks:  "local-disk 100 HDD"
-        dx_instance_type: "mem1_ssd1_v2_x2"
+        dx_instance_type: "mem1_ssd1_v2_x4"
         preemptible: 1
     }
     output {
@@ -91,7 +92,7 @@ task nextstrain__filter_subsample_sequences {
         Int    sequences_out     = read_int("OUT_COUNT")
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
+        String cpu_load = read_string("CPU_LOAD")
     }
 }
 

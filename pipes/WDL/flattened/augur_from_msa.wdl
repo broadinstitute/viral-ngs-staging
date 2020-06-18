@@ -12,7 +12,6 @@ workflow augur_from_msa {
     input {
         File            msa_or_vcf
         File            sample_metadata
-        String          virus
         File            ref_fasta
         File            genbank_gb
         File?           clades_tsv
@@ -27,9 +26,6 @@ workflow augur_from_msa {
         sample_metadata: {
           description: "Metadata in tab-separated text format. See https://nextstrain-augur.readthedocs.io/en/stable/faq/metadata.html for details.",
           patterns: ["*.txt", "*.tsv"]
-        }
-        virus: {
-          description: "A filename-friendly string that is used as a base for output file names."
         }
         ref_fasta: {
           description: "A reference assembly (not included in assembly_fastas) to align assembly_fastas against. Typically from NCBI RefSeq or similar.",
@@ -54,37 +50,32 @@ workflow augur_from_msa {
     }
     call nextstrain__draft_augur_tree as draft_augur_tree {
         input:
-            msa_or_vcf = augur_mask_sites.masked_sequences,
-            basename   = virus
+            msa_or_vcf = augur_mask_sites.masked_sequences
     }
     call nextstrain__refine_augur_tree as refine_augur_tree {
         input:
             raw_tree    = draft_augur_tree.aligned_tree,
             msa_or_vcf  = augur_mask_sites.masked_sequences,
-            metadata    = sample_metadata,
-            basename    = virus
+            metadata    = sample_metadata
     }
     if(defined(ancestral_traits_to_infer) && length(select_first([ancestral_traits_to_infer,[]]))>0) {
         call nextstrain__ancestral_traits as ancestral_traits {
             input:
                 tree           = refine_augur_tree.tree_refined,
                 metadata       = sample_metadata,
-                columns        = select_first([ancestral_traits_to_infer,[]]),
-                basename       = virus
+                columns        = select_first([ancestral_traits_to_infer,[]])
         }
     }
     call nextstrain__ancestral_tree as ancestral_tree {
         input:
-            refined_tree  = refine_augur_tree.tree_refined,
-            msa_or_vcf    = augur_mask_sites.masked_sequences,
-            basename      = virus
+            tree        = refine_augur_tree.tree_refined,
+            msa_or_vcf  = augur_mask_sites.masked_sequences
     }
     call nextstrain__translate_augur_tree as translate_augur_tree {
         input:
-            basename       = virus,
-            refined_tree   = refine_augur_tree.tree_refined,
-            nt_muts        = ancestral_tree.nt_muts_json,
-            genbank_gb     = genbank_gb
+            tree        = refine_augur_tree.tree_refined,
+            nt_muts     = ancestral_tree.nt_muts_json,
+            genbank_gb  = genbank_gb
     }
     if(defined(clades_tsv)) {
         call nextstrain__assign_clades_to_nodes as assign_clades_to_nodes {
@@ -136,6 +127,7 @@ task nextstrain__augur_mask_sites {
     }
     String out_fname = sub(sub(basename(sequences), ".vcf", ".masked.vcf"), ".fasta$", ".masked.fasta")
     command {
+        set -e
         augur version > VERSION
         BEDFILE=~{select_first([mask_bed, "/dev/null"])}
         if [ -s "$BEDFILE" ]; then
@@ -146,22 +138,22 @@ task nextstrain__augur_mask_sites {
             cp "~{sequences}" "~{out_fname}"
         fi
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
+        cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: "2 GB"
-        cpu :   1
+        memory: "3 GB"
+        cpu :   4
         disks:  "local-disk 100 HDD"
         preemptible: 1
-        dx_instance_type: "mem1_ssd1_v2_x2"
+        dx_instance_type: "mem1_ssd1_v2_x4"
     }
     output {
         File   masked_sequences = out_fname
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
+        String cpu_load = read_string("CPU_LOAD")
         String augur_version  = read_string("VERSION")
     }
 }
@@ -175,7 +167,6 @@ task nextstrain__draft_augur_tree {
     }
     input {
         File     msa_or_vcf
-        String   basename
 
         String   method = "iqtree"
         String   substitution_model = "GTR"
@@ -191,33 +182,35 @@ task nextstrain__draft_augur_tree {
           patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
         }
     }
+    String out_basename = basename(basename(basename(msa_or_vcf, '.gz'), '.vcf'), '.fasta')
     command {
+        set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur tree --alignment ~{msa_or_vcf} \
-            --output ~{basename}_raw_tree.nwk \
-            --method ~{default="iqtree" method} \
+            --output ~{out_basename}_~{method}.nwk \
+            --method ~{method} \
             --substitution-model ~{default="GTR" substitution_model} \
             ~{"--exclude-sites " + exclude_sites} \
             ~{"--vcf-reference " + vcf_reference} \
             ~{"--tree-builder-args " + tree_builder_args} \
             --nthreads auto
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
+        cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: "16 GB"
-        cpu :   32
+        memory: "32 GB"
+        cpu :   64
         disks:  "local-disk 750 LOCAL"
         dx_instance_type: "mem1_ssd1_v2_x36"
         preemptible: 0
     }
     output {
-        File   aligned_tree = "~{basename}_raw_tree.nwk"
+        File   aligned_tree = "~{out_basename}_~{method}.nwk"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
+        String cpu_load = read_string("CPU_LOAD")
         String augur_version = read_string("VERSION")
     }
 }
@@ -233,7 +226,6 @@ task nextstrain__refine_augur_tree {
         File     raw_tree
         File     msa_or_vcf
         File     metadata
-        String   basename
 
         Int?     gen_per_year
         Float?   clock_rate
@@ -259,14 +251,16 @@ task nextstrain__refine_augur_tree {
           patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
         }
     }
+    String out_basename = basename(basename(basename(msa_or_vcf, '.gz'), '.vcf'), '.fasta')
     command {
+        set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur refine \
             --tree ~{raw_tree} \
             --alignment ~{msa_or_vcf} \
             --metadata ~{metadata} \
-            --output-tree ~{basename}_refined_tree.nwk \
-            --output-node-data ~{basename}_branch_lengths.json \
+            --output-tree ~{out_basename}_timetree.nwk \
+            --output-node-data ~{out_basename}_branch_lengths.json \
             --timetree \
             ~{"--clock-rate " + clock_rate} \
             ~{"--clock-std-dev " + clock_std_dev} \
@@ -284,23 +278,23 @@ task nextstrain__refine_augur_tree {
             ~{true="--date-confidence" false="" date_confidence} \
             ~{"--vcf-reference " + vcf_reference}
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
+        cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: "13 GB"
-        cpu :   2
+        memory: "25 GB"
+        cpu :   4
         disks:  "local-disk 100 HDD"
-        dx_instance_type: "mem3_ssd1_v2_x2"
+        dx_instance_type: "mem3_ssd1_v2_x4"
         preemptible: 0
     }
     output {
-        File   tree_refined  = "~{basename}_refined_tree.nwk"
-        File   branch_lengths = "~{basename}_branch_lengths.json"
+        File   tree_refined  = "~{out_basename}_timetree.nwk"
+        File   branch_lengths = "~{out_basename}_branch_lengths.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
+        String cpu_load = read_string("CPU_LOAD")
         String augur_version = read_string("VERSION")
     }
 }
@@ -315,8 +309,7 @@ task nextstrain__ancestral_traits {
     input {
         File           tree
         File           metadata
-        Array[String]+ columns
-        String         basename
+        Array[String]  columns
 
         Boolean        confidence = true
         File?          weights
@@ -324,33 +317,35 @@ task nextstrain__ancestral_traits {
 
         String   docker = "nextstrain/base:build-20200608T223413Z"
     }
+    String out_basename = basename(tree, '.nwk')
     command {
+        set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur traits \
             --tree ~{tree} \
             --metadata ~{metadata} \
             --columns ~{sep=" " columns} \
-            --output-node-data "~{basename}_nodes.json" \
+            --output-node-data "~{out_basename}_ancestral_traits.json" \
             ~{"--weights " + weights} \
             ~{"--sampling-bias-correction " + sampling_bias_correction} \
             ~{true="--confidence" false="" confidence}
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
+        cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: "2 GB"
-        cpu :   1
+        memory: "3 GB"
+        cpu :   2
         disks:  "local-disk 50 HDD"
         dx_instance_type: "mem1_ssd1_v2_x2"
         preemptible: 1
     }
     output {
-        File   node_data_json = "~{basename}_nodes.json"
+        File   node_data_json = "~{out_basename}_ancestral_traits.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
+        String cpu_load = read_string("CPU_LOAD")
         String augur_version = read_string("VERSION")
     }
 }
@@ -363,9 +358,8 @@ task nextstrain__ancestral_tree {
         description: "Infer ancestral sequences based on a tree. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/ancestral.html"
     }
     input {
-        File     refined_tree
+        File     tree
         File     msa_or_vcf
-        String   basename
 
         String   inference = "joint"
         Boolean  keep_ambiguous = false
@@ -382,37 +376,39 @@ task nextstrain__ancestral_tree {
           patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
         }
     }
+    String out_basename = basename(basename(basename(msa_or_vcf, '.gz'), '.vcf'), '.fasta')
     command {
+        set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur ancestral \
-            --tree ~{refined_tree} \
+            --tree ~{tree} \
             --alignment ~{msa_or_vcf} \
-            --output-node-data ~{basename}_nt_muts.json \
+            --output-node-data ~{out_basename}_nt_muts.json \
             ~{"--vcf-reference " + vcf_reference} \
             ~{"--output-vcf " + output_vcf} \
-            --output-sequences ~{basename}_ancestral_sequences.fasta \
+            --output-sequences ~{out_basename}_ancestral_sequences.fasta \
             ~{true="--keep-overhangs" false="" keep_overhangs} \
             --inference ~{default="joint" inference} \
             ~{true="--keep-ambiguous" false="" keep_ambiguous} \
             ~{true="--infer-ambiguous" false="" infer_ambiguous}
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
+        cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: "13 GB"
-        cpu :   2
+        memory: "20 GB"
+        cpu :   4
         disks:  "local-disk 50 HDD"
-        dx_instance_type: "mem3_ssd1_v2_x2"
-        preemptible: 1
+        dx_instance_type: "mem3_ssd1_v2_x4"
+        preemptible: 0
     }
     output {
-        File   nt_muts_json = "~{basename}_nt_muts.json"
-        File   sequences    = "~{basename}_ancestral_sequences.fasta"
+        File   nt_muts_json = "~{out_basename}_nt_muts.json"
+        File   sequences    = "~{out_basename}_ancestral_sequences.fasta"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
+        String cpu_load = read_string("CPU_LOAD")
         String augur_version = read_string("VERSION")
     }
 }
@@ -425,8 +421,7 @@ task nextstrain__translate_augur_tree {
         description: "export augur files to json suitable for auspice visualization. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/translate.html"
     }
     input {
-        String basename
-        File   refined_tree
+        File   tree
         File   nt_muts
         File   genbank_gb
 
@@ -436,15 +431,17 @@ task nextstrain__translate_augur_tree {
 
         String docker = "nextstrain/base:build-20200608T223413Z"
     }
+    String out_basename = basename(tree, '.nwk')
     command {
+        set -e
         augur version > VERSION
-        AUGUR_RECURSION_LIMIT=10000 augur translate --tree ~{refined_tree} \
+        AUGUR_RECURSION_LIMIT=10000 augur translate --tree ~{tree} \
             --ancestral-sequences ~{nt_muts} \
             --reference-sequence ~{genbank_gb} \
             ~{"--vcf-reference-output " + vcf_reference_output} \
             ~{"--vcf-reference " + vcf_reference} \
             ~{"--genes " + genes} \
-            --output-node-data ~{basename}_aa_muts.json
+            --output-node-data ~{out_basename}_aa_muts.json
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
@@ -456,7 +453,7 @@ task nextstrain__translate_augur_tree {
         preemptible: 1
     }
     output {
-        File   aa_muts_json = "~{basename}_aa_muts.json"
+        File   aa_muts_json = "~{out_basename}_aa_muts.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         String augur_version = read_string("VERSION")
     }
@@ -478,15 +475,16 @@ task nextstrain__assign_clades_to_nodes {
 
         String docker = "nextstrain/base:build-20200608T223413Z"
     }
-    String out_basename = basename(basename(tree_nwk, ".nwk"), "_refined_tree")
+    String out_basename = basename(basename(tree_nwk, ".nwk"), "_timetree")
     command {
+        set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur clades \
         --tree ~{tree_nwk} \
         --mutations ~{nt_muts_json} ~{aa_muts_json} \
         --reference ~{ref_fasta} \
         --clades ~{clades_tsv} \
-        --output-node-data ~{out_basename}_node-clade-assignments.json
+        --output-node-data ~{out_basename}_clades.json
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
@@ -527,8 +525,9 @@ task nextstrain__export_auspice_json {
 
         String docker = "nextstrain/base:build-20200608T223413Z"
     }
-    String out_basename = basename(basename(tree, ".nwk"), "_refined_tree")
+    String out_basename = basename(basename(tree, ".nwk"), "_timetree")
     command {
+        set -e -o pipefail
         augur version > VERSION
         touch exportargs
 
@@ -574,7 +573,7 @@ task nextstrain__export_auspice_json {
             ~{"--description " + description_md} \
             --output ~{out_basename}_auspice.json)
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
+        cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
@@ -589,7 +588,7 @@ task nextstrain__export_auspice_json {
         File   virus_json = "~{out_basename}_auspice.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
+        String cpu_load = read_string("CPU_LOAD")
         String augur_version = read_string("VERSION")
     }
 }

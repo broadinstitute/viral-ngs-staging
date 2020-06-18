@@ -25,6 +25,11 @@ workflows:
    primaryDescriptorPath: pipes/WDL/flattened/assemble_refbased.wdl
    testParameterFiles:
     - empty.json
+ - name: augur_from_assemblies
+   subclass: WDL
+   primaryDescriptorPath: pipes/WDL/flattened/augur_from_assemblies.wdl
+   testParameterFiles:
+    - empty.json
  - name: augur_from_beast_mcc
    subclass: WDL
    primaryDescriptorPath: pipes/WDL/flattened/augur_from_beast_mcc.wdl
@@ -48,11 +53,6 @@ workflows:
  - name: beast_gpu
    subclass: WDL
    primaryDescriptorPath: pipes/WDL/flattened/beast_gpu.wdl
-   testParameterFiles:
-    - empty.json
- - name: build_augur_tree
-   subclass: WDL
-   primaryDescriptorPath: pipes/WDL/flattened/build_augur_tree.wdl
    testParameterFiles:
     - empty.json
  - name: classify_kaiju

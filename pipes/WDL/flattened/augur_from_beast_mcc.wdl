@@ -55,6 +55,7 @@ task nextstrain__augur_import_beast {
     }
     String tree_basename = basename(beast_mcc_tree, ".tree")
     command {
+        set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur import beast \
             --mcc "~{beast_mcc_tree}" \
@@ -65,7 +66,7 @@ task nextstrain__augur_import_beast {
             ~{"--tip-date-format " + tip_date_format} \
             ~{"--tip-date-delimeter " + tip_date_delimiter}
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
+        cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
@@ -79,9 +80,9 @@ task nextstrain__augur_import_beast {
     output {
         File   tree_newick    = "~{tree_basename}.nwk"
         File   node_data_json = "~{tree_basename}.json"
-        Int    max_ram_gb = ceil(read_float("/sys/fs/cgroup/memory/memory.max_usage_in_bytes")/1000000000)
+        Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
+        String cpu_load = read_string("CPU_LOAD")
         String augur_version = read_string("VERSION")
     }
 }
@@ -109,8 +110,9 @@ task nextstrain__export_auspice_json {
 
         String docker = "nextstrain/base:build-20200608T223413Z"
     }
-    String out_basename = basename(basename(tree, ".nwk"), "_refined_tree")
+    String out_basename = basename(basename(tree, ".nwk"), "_timetree")
     command {
+        set -e -o pipefail
         augur version > VERSION
         touch exportargs
 
@@ -156,7 +158,7 @@ task nextstrain__export_auspice_json {
             ~{"--description " + description_md} \
             --output ~{out_basename}_auspice.json)
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg | cut -f 3 -d ' ' > LOAD_15M
+        cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
@@ -171,7 +173,7 @@ task nextstrain__export_auspice_json {
         File   virus_json = "~{out_basename}_auspice.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        Int    cpu_load_15min = ceil(read_float("LOAD_15M"))
+        String cpu_load = read_string("CPU_LOAD")
         String augur_version = read_string("VERSION")
     }
 }
