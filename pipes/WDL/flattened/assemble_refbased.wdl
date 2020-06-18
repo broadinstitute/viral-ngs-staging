@@ -86,11 +86,6 @@ workflow assemble_refbased {
             sample_name         = sample_name
     }
 
-    call reports__MultiQC as multiqc_align_to_ref {
-        input:
-            input_files = align_to_ref.aligned_only_reads_fastqc_zip
-    }
-
     call assembly__refine_assembly_with_aligned_reads as call_consensus {
         input:
             reference_fasta   = reference_fasta,
@@ -135,9 +130,9 @@ workflow assemble_refbased {
         Array[File]   align_to_ref_per_input_aligned_flagstat = align_to_ref.aligned_bam_flagstat
         Array[Int]    align_to_ref_per_input_reads_provided   = align_to_ref.reads_provided
         Array[Int]    align_to_ref_per_input_reads_aligned    = align_to_ref.reads_aligned
+        Array[File]   align_to_ref_per_input_fastqc = align_to_ref.aligned_only_reads_fastqc
 
         File   align_to_ref_merged_aligned_trimmed_only_bam = merge_align_to_ref.out_bam
-        File   align_to_ref_multiqc_report                  = multiqc_align_to_ref.multiqc_report
         File   align_to_ref_merged_coverage_plot            = plot_ref_coverage.coverage_plot
         File   align_to_ref_merged_coverage_tsv             = plot_ref_coverage.coverage_tsv
         Int    align_to_ref_merged_reads_aligned            = plot_ref_coverage.reads_aligned
@@ -280,7 +275,7 @@ task assembly__ivar_trim {
       File?   trim_coords_bed
       Int?    min_keep_length
       Int?    sliding_window
-      Int?    min_quality
+      Int?    min_quality=1
 
       Int?    machine_mem_gb
       String  docker="andersenlabapps/ivar:1.2.2"
@@ -299,13 +294,18 @@ task assembly__ivar_trim {
     command {
         set -ex -o pipefail
         ivar version | head -1 | tee VERSION
-        ivar trim -e \
-          ${'-b ' + trim_coords_bed} \
-          ${'-m ' + min_keep_length} \
-          ${'-s ' + sliding_window} \
-          ${'-q ' + min_quality} \
-          -i ${aligned_bam} -p trim
-        samtools sort -@ $(nproc) -m 1000M -o ${bam_basename}.trimmed.bam trim.bam
+        if [ -f "${trim_coords_bed}" ]; then
+          ivar trim -e \
+            ${'-b ' + trim_coords_bed} \
+            ${'-m ' + min_keep_length} \
+            ${'-s ' + sliding_window} \
+            ${'-q ' + min_quality} \
+            -i ${aligned_bam} -p trim
+          samtools sort -@ $(nproc) -m 1000M -o ${bam_basename}.trimmed.bam trim.bam
+        else
+          echo "skipping ivar trim"
+          cp "${aligned_bam}" "${bam_basename}.trimmed.bam"
+        fi
     }
 
     output {
@@ -465,105 +465,6 @@ task reports__plot_coverage {
     disks: "local-disk 375 LOCAL"
     dx_instance_type: "mem1_ssd1_v2_x4"
     preemptible: 1
-  }
-}
-
-
-
-
-task reports__MultiQC {
-  input {
-    Array[File]     input_files = []
-
-    Boolean         force = false
-    Boolean         full_names = false
-    String?         title
-    String?         comment
-    String?         file_name
-    String          out_dir = "./multiqc-output"
-    String?         template
-    String?         tag
-    String?         ignore_analysis_files
-    String?         ignore_sample_names
-    File?           sample_names
-    Array[String]+? exclude_modules
-    Array[String]+? module_to_use
-    Boolean         data_dir = false
-    Boolean         no_data_dir = false
-    String?         output_data_format
-    Boolean         zip_data_dir = false
-    Boolean         export = false
-    Boolean         flat = false
-    Boolean         interactive = true
-    Boolean         lint = false
-    Boolean         pdf = false
-    Boolean         megaQC_upload = false # Upload generated report to MegaQC if MegaQC options are found
-    File?           config  # directory
-    String?         config_yaml
-
-    String          docker = "quay.io/biocontainers/multiqc:1.8--py_2"
-  }
-
-  parameter_meta {
-    output_data_format: { description: "[tsv|yaml|json] default:tsv" }
-  }
-
-  # get the basename in all wdl use the filename specified (sans ".html" extension, if specified)
-  String report_filename = if (defined(file_name)) then basename(select_first([file_name]), ".html") else "multiqc"
-
-  command {
-      set -ex -o pipefail
-
-      echo "${sep='\n' input_files}" > input-filenames.txt
-      echo "" >> input-filenames.txt
-
-      multiqc \
-      --file-list input-filenames.txt \
-      --dirs \
-      --outdir "${out_dir}" \
-      ${true="--force" false="" force} \
-      ${true="--fullnames" false="" full_names} \
-      ${"--title " + title} \
-      ${"--comment " + comment} \
-      ${"--filename " + file_name} \
-      ${"--template " + template} \
-      ${"--tag " + tag} \
-      ${"--ignore " + ignore_analysis_files} \
-      ${"--ignore-samples" + ignore_sample_names} \
-      ${"--sample-names " + sample_names} \
-      ${true="--exclude " false="" defined(exclude_modules)}${sep=" --exclude " exclude_modules} \
-      ${true="--module " false="" defined(module_to_use)}${sep=" --module " module_to_use} \
-      ${true="--data-dir" false="" data_dir} \
-      ${true="--no-data-dir" false="" no_data_dir} \
-      ${"--data-format " + output_data_format} \
-      ${true="--zip-data-dir" false="" zip_data_dir} \
-      ${true="--export" false="" export} \
-      ${true="--flat" false="" flat} \
-      ${true="--interactive" false="" interactive} \
-      ${true="--lint" false="" lint} \
-      ${true="--pdf" false="" pdf} \
-      ${false="--no-megaqc-upload" true="" megaQC_upload} \
-      ${"--config " + config} \
-      ${"--cl-config " + config_yaml }
-
-      if [ -z "${file_name}" ]; then
-        mv "${out_dir}/${report_filename}_report.html" "${out_dir}/${report_filename}.html"
-      fi
-
-      tar -c "${out_dir}/${report_filename}_data" | gzip -c > "${report_filename}_data.tar.gz"
-  }
-
-  output {
-      File multiqc_report            = "${out_dir}/${report_filename}.html"
-      File multiqc_data_dir_tarball  = "${report_filename}_data.tar.gz"
-  }
-
-  runtime {
-    memory: "3 GB"
-    cpu: 2
-    docker: "${docker}"
-    disks: "local-disk 375 LOCAL"
-    dx_instance_type: "mem1_ssd1_v2_x2"
   }
 }
 
