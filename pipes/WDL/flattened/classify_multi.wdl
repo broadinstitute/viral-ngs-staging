@@ -523,7 +523,7 @@ task assembly__assemble {
       String   sample_name = basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt")
 
       Int?     machine_mem_gb
-      String   docker="quay.io/broadinstitute/viral-assemble:2.1.3.0"
+      String   docker="quay.io/broadinstitute/viral-assemble:2.1.3.1"
     }
 
     command {

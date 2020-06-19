@@ -41,7 +41,7 @@ workflow scaffold_and_refine {
     File aligned_only_reads_fastqc     = refine_2x_and_plot.aligned_only_reads_fastqc
     File coverage_tsv                  = refine_2x_and_plot.coverage_tsv
     Int  read_pairs_aligned            = refine_2x_and_plot.read_pairs_aligned
-    Int  bases_aligned                 = refine_2x_and_plot.bases_aligned
+    Float bases_aligned                 = refine_2x_and_plot.bases_aligned
 
     String scaffold_viral_assemble_version = scaffold.viralngs_version
     String refine_viral_assemble_version   = refine_2x_and_plot.viralngs_version
@@ -67,7 +67,7 @@ task assembly__scaffold {
       Float?       scaffold_min_pct_contig_aligned
 
       Int?         machine_mem_gb
-      String       docker="quay.io/broadinstitute/viral-assemble:2.1.3.0"
+      String       docker="quay.io/broadinstitute/viral-assemble:2.1.3.1"
 
       # do this in multiple steps in case the input doesn't actually have "assembly1-x" in the name
       String       sample_name = basename(basename(basename(contigs_fasta, ".fasta"), ".assembly1-trinity"), ".assembly1-spades")
@@ -166,7 +166,7 @@ task assembly__refine_2x_and_plot {
       String? plot_coverage_novoalign_options="-r Random -l 40 -g 40 -x 20 -t 100 -k"
 
       Int?    machine_mem_gb
-      String  docker="quay.io/broadinstitute/viral-assemble:2.1.3.0"
+      String  docker="quay.io/broadinstitute/viral-assemble:2.1.3.1"
 
       # do this in two steps in case the input doesn't actually have "cleaned" in the name
       String  sample_name = basename(basename(reads_unmapped_bam, ".bam"), ".cleaned")
@@ -273,7 +273,7 @@ task assembly__refine_2x_and_plot {
         Int  assembly_length_unambiguous   = read_int("assembly_length_unambiguous")
         Int  reads_aligned                 = read_int("reads_aligned")
         Int  read_pairs_aligned            = read_int("read_pairs_aligned")
-        Int  bases_aligned                 = read_int("bases_aligned")
+        Float bases_aligned                 = read_float("bases_aligned")
         Float mean_coverage                = read_float("mean_coverage")
         String viralngs_version            = read_string("VERSION")
     }
