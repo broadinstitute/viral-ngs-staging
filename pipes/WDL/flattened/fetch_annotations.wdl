@@ -20,7 +20,7 @@ task ncbi__download_annotations {
     String         emailAddress
     String         combined_out_prefix
 
-    String         docker="quay.io/broadinstitute/viral-phylo:2.1.3.1"
+    String         docker="quay.io/broadinstitute/viral-phylo:2.1.4.0"
   }
 
   command {

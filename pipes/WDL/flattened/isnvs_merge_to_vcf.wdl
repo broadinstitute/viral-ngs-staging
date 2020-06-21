@@ -43,7 +43,7 @@ task interhost__multi_align_mafft_ref {
     Float?         mafft_gapOpeningPenalty
 
     Int?           machine_mem_gb
-    String         docker="quay.io/broadinstitute/viral-phylo:2.1.3.1"
+    String         docker="quay.io/broadinstitute/viral-phylo:2.1.4.0"
   }
 
   String           fasta_basename = basename(reference_fasta, '.fasta')
@@ -93,7 +93,7 @@ task tasks_intrahost__isnvs_vcf {
     Boolean        naiveFilter=false
 
     Int?           machine_mem_gb
-    String         docker="quay.io/broadinstitute/viral-phylo:2.1.3.1"
+    String         docker="quay.io/broadinstitute/viral-phylo:2.1.4.0"
   }
 
   parameter_meta {

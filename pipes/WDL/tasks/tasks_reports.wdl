@@ -10,7 +10,7 @@ task plot_coverage {
     Boolean? bin_large_plots=false
     String?  binning_summary_statistic="max" # max or min
 
-    String   docker="quay.io/broadinstitute/viral-core:2.1.3"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.4"
   }
   
   command {
@@ -85,7 +85,7 @@ task coverage_report {
     Array[File]  mapped_bam_idx # optional.. speeds it up if you provide it, otherwise we auto-index
     String       out_report_name="coverage_report.txt"
 
-    String       docker="quay.io/broadinstitute/viral-core:2.1.3"
+    String       docker="quay.io/broadinstitute/viral-core:2.1.4"
   }
 
   command {
@@ -115,7 +115,7 @@ task fastqc {
   input {
     File     reads_bam
 
-    String   docker="quay.io/broadinstitute/viral-core:2.1.3"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.4"
   }
 
   String   reads_basename=basename(reads_bam, ".bam")
@@ -145,11 +145,10 @@ task align_and_count {
   input {
     File    reads_bam
     File    ref_db
-    Int?    minScoreToFilter
     Int?    topNHits = 3
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.1.3"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.4"
   }
 
   String  reads_basename=basename(reads_bam, ".bam")
@@ -161,11 +160,10 @@ task align_and_count {
     read_utils.py --version | tee VERSION
 
     ln -s ${reads_bam} ${reads_basename}.bam
-    read_utils.py bwamem_idxstats \
+    read_utils.py minimap2_idxstats \
       ${reads_basename}.bam \
       ${ref_db} \
       --outStats ${reads_basename}.count.${ref_basename}.txt.unsorted \
-      ${'--minScoreToFilter=' + minScoreToFilter} \
       --loglevel=DEBUG
 
       sort -b -r -n -k3 ${reads_basename}.count.${ref_basename}.txt.unsorted > ${reads_basename}.count.${ref_basename}.txt
@@ -179,7 +177,7 @@ task align_and_count {
   }
 
   runtime {
-    memory: select_first([machine_mem_gb, 7]) + " GB"
+    memory: select_first([machine_mem_gb, 3]) + " GB"
     cpu: 4
     docker: "${docker}"
     disks: "local-disk 375 LOCAL"
@@ -193,7 +191,7 @@ task align_and_count_summary {
 
     String?       output_prefix="count_summary"
 
-    String        docker="quay.io/broadinstitute/viral-core:2.1.3"
+    String        docker="quay.io/broadinstitute/viral-core:2.1.4"
   }
 
   command {
@@ -224,7 +222,7 @@ task aggregate_metagenomics_reports {
     String       aggregate_taxlevel_focus                 = "species"
     Int?         aggregate_top_N_hits                     = 5
 
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.4.0"
   }
 
   parameter_meta {
@@ -367,7 +365,7 @@ task tsv_join {
     String         join_type="inner"
     String         out_basename
 
-    String         docker="stratdat/csvkit"
+    String         docker="quay.io/broadinstitute/viral-core:2.1.4"
   }
 
   command {
@@ -408,7 +406,7 @@ task tsv_stack {
   input {
     Array[File]+   input_tsvs
     String         out_basename
-    String         docker="stratdat/csvkit"
+    String         docker="quay.io/broadinstitute/viral-core:2.1.4"
   }
 
   command {
@@ -438,7 +436,7 @@ task compare_two_genomes {
     File          genome_two
     String        out_basename
 
-    String        docker="quay.io/broadinstitute/viral-assemble:2.1.3.1"
+    String        docker="quay.io/broadinstitute/viral-assemble:2.1.4.0"
   }
 
   command {

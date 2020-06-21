@@ -21,7 +21,7 @@ workflow diff_genome_sets {
     call reports__tsv_stack as tsv_stack {
         input:
             input_tsvs = compare_two_genomes.comparison_table,
-            out_basename = "diff_genome_sets.txt"
+            out_basename = "diff_genome_sets"
     }
 
     output {
@@ -38,7 +38,7 @@ task reports__compare_two_genomes {
     File          genome_two
     String        out_basename
 
-    String        docker="quay.io/broadinstitute/viral-assemble:2.1.3.1"
+    String        docker="quay.io/broadinstitute/viral-assemble:2.1.4.0"
   }
 
   command {
@@ -75,7 +75,7 @@ task reports__tsv_stack {
   input {
     Array[File]+   input_tsvs
     String         out_basename
-    String         docker="stratdat/csvkit"
+    String         docker="quay.io/broadinstitute/viral-core:2.1.4"
   }
 
   command {

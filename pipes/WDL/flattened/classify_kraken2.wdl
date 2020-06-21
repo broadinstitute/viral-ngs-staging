@@ -28,7 +28,7 @@ task metagenomics__kraken2 {
     Int?     min_base_qual
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.4.0"
   }
 
   parameter_meta {

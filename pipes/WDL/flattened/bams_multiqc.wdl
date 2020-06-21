@@ -32,7 +32,7 @@ task reports__fastqc {
   input {
     File     reads_bam
 
-    String   docker="quay.io/broadinstitute/viral-core:2.1.3"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.4"
   }
 
   String   reads_basename=basename(reads_bam, ".bam")

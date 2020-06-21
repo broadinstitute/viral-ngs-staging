@@ -45,7 +45,7 @@ task interhost__merge_vcfs_gatk {
     File        ref_fasta
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-phylo:2.1.3.1"
+    String   docker="quay.io/broadinstitute/viral-phylo:2.1.4.0"
 
     String   output_prefix = "merged"
   }
@@ -112,7 +112,7 @@ task intrahost__annotate_vcf_snpeff {
     String?        emailAddress
 
     Int?           machine_mem_gb
-    String         docker="quay.io/broadinstitute/viral-phylo:2.1.3.1"
+    String         docker="quay.io/broadinstitute/viral-phylo:2.1.4.0"
 
     String         output_basename = basename(basename(in_vcf, ".gz"), ".vcf")
   }

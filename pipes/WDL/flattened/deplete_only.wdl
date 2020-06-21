@@ -31,7 +31,7 @@ task taxon_filter__deplete_taxa {
 
     Int?         cpu=8
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.3.1"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.4.0"
   }
 
   parameter_meta {
