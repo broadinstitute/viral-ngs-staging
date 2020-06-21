@@ -147,9 +147,14 @@ workflow assemble_refbased {
         Int    reference_genome_length      = plot_ref_coverage.assembly_length
         Float  assembly_mean_coverage       = plot_ref_coverage.mean_coverage
 
+        Int    dist_to_ref_snps   = call_consensus.dist_to_ref_snps
+        Int    dist_to_ref_indels = call_consensus.dist_to_ref_indels
+
         Int    replicate_concordant_sites  = run_discordance.concordant_sites
         Int    replicate_discordant_snps   = run_discordance.discordant_snps
         Int    replicate_discordant_indels = run_discordance.discordant_indels
+        Int    num_read_groups             = run_discordance.num_read_groups
+        Int    num_libraries               = run_discordance.num_libraries
         File   replicate_discordant_vcf    = run_discordance.discordant_sites_vcf
 
         Array[File]   align_to_ref_per_input_aligned_flagstat = align_to_ref.aligned_bam_flagstat
@@ -430,6 +435,7 @@ task assembly__run_discordance {
       File     reads_aligned_bam
       File     reference_fasta
       String   out_basename = "run"
+      Int      min_coverage=4
 
       String   docker="quay.io/broadinstitute/viral-core:2.1.4"
     }
@@ -444,9 +450,15 @@ task assembly__run_discordance {
         import tools.samtools
         header = tools.samtools.SamtoolsTool().getHeader("${reads_aligned_bam}")
         rgids = [[x[3:] for x in h if x.startswith('ID:')][0] for h in header if h[0]=='@RG']
+        n_rgs = len(rgids)
         with open('readgroups.txt', 'wt') as outf:
           for rg in rgids:
             outf.write(rg+'\t'+rg+'\n')
+        n_lbs = len(set([[x[3:] for x in h if x.startswith('LB:')][0] for h in header if h[0]=='@RG']))
+        with open('num_read_groups', 'wt') as outf:
+          outf.write(str(n_rgs)+'\n')
+        with open('num_libraries', 'wt') as outf:
+          outf.write(str(n_lbs)+'\n')
         CODE
 
         # bcftools call snps while treating each RG as a separate sample
@@ -460,14 +472,13 @@ task assembly__run_discordance {
           -Ov -o everything.vcf
 
         # mask all GT calls when less than 3 reads
-        cat everything.vcf | bcftools filter -e 'FMT/DP<3' -S . > filtered.vcf
-        cat filtered.vcf | bcftools filter -i 'MAC>0' > "${out_basename}.discordant.vcf"
+        cat everything.vcf | bcftools filter -e "FMT/DP<${min_coverage}" -S . > filtered.vcf
+        cat filtered.vcf | bcftools filter -i "MAC>0" > "${out_basename}.discordant.vcf"
 
         # tally outputs
-        set +o pipefail # to handle empty grep
-        cat filtered.vcf | bcftools filter -i 'MAC=0' | grep -v '^#' | wc -l | tee num_concordant
-        cat "${out_basename}.discordant.vcf" | bcftools filter -i 'TYPE="snp"' | grep -v '^#' | wc -l | tee num_discordant_snps
-        cat "${out_basename}.discordant.vcf" | bcftools filter -i 'TYPE!="snp"' | grep -v '^#' | wc -l | tee num_discordant_indels
+        bcftools filter -i 'MAC=0' filtered.vcf | bcftools query -f '%POS\n' | wc -l | tee num_concordant
+        bcftools filter -i 'TYPE="snp"'  "${out_basename}.discordant.vcf" | bcftools query -f '%POS\n' | wc -l | tee num_discordant_snps
+        bcftools filter -i 'TYPE!="snp"' "${out_basename}.discordant.vcf" | bcftools query -f '%POS\n' | wc -l | tee num_discordant_indels
     }
 
     output {
@@ -475,6 +486,8 @@ task assembly__run_discordance {
         Int    concordant_sites  = read_int("num_concordant")
         Int    discordant_snps   = read_int("num_discordant_snps")
         Int    discordant_indels = read_int("num_discordant_indels")
+        Int    num_read_groups   = read_int("num_read_groups")
+        Int    num_libraries     = read_int("num_libraries")
         String viralngs_version  = read_string("VERSION")
     }
 
@@ -634,6 +647,11 @@ task assembly__refine_assembly_with_aligned_reads {
         file_utils.py rename_fasta_sequences \
           refined.fasta "${sample_name}.fasta" "${sample_name}"
 
+        # collect variant counts
+        bcftools filter -e "FMT/DP<${min_coverage}" -S . "${sample_name}.sites.vcf.gz" -Ou | bcftools filter -i "AC>1" -Ou > "${sample_name}.diffs.vcf"
+        bcftools filter -i 'TYPE="snp"'  "${sample_name}.diffs.vcf" | bcftools query -f '%POS\n' | wc -l | tee num_snps
+        bcftools filter -i 'TYPE!="snp"' "${sample_name}.diffs.vcf" | bcftools query -f '%POS\n' | wc -l | tee num_indels
+
         # collect figures of merit
         set +o pipefail # grep will exit 1 if it fails to find the pattern
         grep -v '^>' refined.fasta | tr -d '\n' | wc -c | tee assembly_length
@@ -645,6 +663,8 @@ task assembly__refine_assembly_with_aligned_reads {
         File   sites_vcf_gz                 = "${sample_name}.sites.vcf.gz"
         Int    assembly_length              = read_int("assembly_length")
         Int    assembly_length_unambiguous  = read_int("assembly_length_unambiguous")
+        Int    dist_to_ref_snps             = read_int("num_snps")
+        Int    dist_to_ref_indels           = read_int("num_indels")
         String viralngs_version             = read_string("VERSION")
     }
 
