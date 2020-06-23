@@ -259,7 +259,7 @@ task align_reads {
     String?  aligner_options
     Boolean? skip_mark_dupes=false
 
-    String   docker="quay.io/broadinstitute/viral-core:2.1.4"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.6"
 
     String   sample_name = basename(basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt"), ".clean")
   }
@@ -667,7 +667,7 @@ task run_discordance {
       String   out_basename = "run"
       Int      min_coverage=4
 
-      String   docker="quay.io/broadinstitute/viral-core:2.1.4"
+      String   docker="quay.io/broadinstitute/viral-core:2.1.6"
     }
 
     command {
