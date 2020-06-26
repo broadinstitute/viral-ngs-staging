@@ -75,6 +75,11 @@ workflows:
    primaryDescriptorPath: pipes/WDL/flattened/classify_multi.wdl
    testParameterFiles:
     - empty.json
+ - name: classify_single
+   subclass: WDL
+   primaryDescriptorPath: pipes/WDL/flattened/classify_single.wdl
+   testParameterFiles:
+    - empty.json
  - name: contigs
    subclass: WDL
    primaryDescriptorPath: pipes/WDL/flattened/contigs.wdl
@@ -160,14 +165,14 @@ workflows:
    primaryDescriptorPath: pipes/WDL/flattened/kraken2_build.wdl
    testParameterFiles:
     - empty.json
+ - name: mafft_and_snp
+   subclass: WDL
+   primaryDescriptorPath: pipes/WDL/flattened/mafft_and_snp.wdl
+   testParameterFiles:
+    - empty.json
  - name: mafft_and_trim
    subclass: WDL
    primaryDescriptorPath: pipes/WDL/flattened/mafft_and_trim.wdl
-   testParameterFiles:
-    - empty.json
- - name: mafft_iqtree
-   subclass: WDL
-   primaryDescriptorPath: pipes/WDL/flattened/mafft_iqtree.wdl
    testParameterFiles:
     - empty.json
  - name: mafft

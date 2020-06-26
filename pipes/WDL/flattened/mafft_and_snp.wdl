@@ -2,9 +2,9 @@ version 1.0
 
 
 
-workflow mafft_iqtree {
+workflow mafft_and_snp {
     meta {
-        description: "Align assemblies, mask sites, build tree."
+        description: "Align assemblies with mafft and find SNPs with snp-sites."
         author: "Broad Viral Genomics"
         email:  "viral-ngs@broadinstitute.org"
     }
@@ -12,6 +12,7 @@ workflow mafft_iqtree {
     input {
         Array[File]     assembly_fastas
         File            ref_fasta
+        Boolean         run_iqtree=false
     }
 
     parameter_meta {
@@ -40,21 +41,18 @@ workflow mafft_iqtree {
         input:
             msa_fasta = mafft.aligned_sequences
     }
-    call nextstrain__augur_mask_sites as augur_mask_sites {
-        input:
-            sequences = mafft.aligned_sequences
-    }
-    call nextstrain__draft_augur_tree as draft_augur_tree {
-        input:
-            msa_or_vcf = augur_mask_sites.masked_sequences
+    if(run_iqtree) {
+        call nextstrain__draft_augur_tree as draft_augur_tree {
+            input:
+                msa_or_vcf = mafft.aligned_sequences
+        }
     }
 
     output {
         File  combined_assemblies = concatenate.combined
         File  multiple_alignment  = mafft.aligned_sequences
         File  unmasked_snps       = snp_sites.snps_vcf
-        File  masked_alignment    = augur_mask_sites.masked_sequences
-        File  ml_tree             = draft_augur_tree.aligned_tree
+        File? ml_tree             = draft_augur_tree.aligned_tree
     }
 }
 
@@ -177,58 +175,6 @@ task nextstrain__snp_sites {
     output {
         File   snps_vcf = "~{out_basename}.vcf"
         String snp_sites_version = read_string("VERSION")
-    }
-}
-
-
-
-
-task nextstrain__augur_mask_sites {
-    meta {
-        description: "Mask unwanted positions from alignment or SNP table. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/mask.html"
-    }
-    input {
-        File     sequences
-        File?    mask_bed
-
-        String   docker = "nextstrain/base:build-20200608T223413Z"
-    }
-    parameter_meta {
-        sequences: {
-          description: "Set of alignments (fasta format) or variants (vcf format) to mask.",
-          patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
-        }
-    }
-    String out_fname = sub(sub(basename(sequences), ".vcf", ".masked.vcf"), ".fasta$", ".masked.fasta")
-    command {
-        set -e
-        augur version > VERSION
-        BEDFILE=~{select_first([mask_bed, "/dev/null"])}
-        if [ -s "$BEDFILE" ]; then
-            augur mask --sequences ~{sequences} \
-                --mask "$BEDFILE" \
-                --output "~{out_fname}"
-        else
-            cp "~{sequences}" "~{out_fname}"
-        fi
-        cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
-        cat /proc/loadavg > CPU_LOAD
-        cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
-    }
-    runtime {
-        docker: docker
-        memory: "3 GB"
-        cpu :   4
-        disks:  "local-disk 100 HDD"
-        preemptible: 1
-        dx_instance_type: "mem1_ssd1_v2_x4"
-    }
-    output {
-        File   masked_sequences = out_fname
-        Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
-        Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
-        String cpu_load = read_string("CPU_LOAD")
-        String augur_version  = read_string("VERSION")
     }
 }
 
