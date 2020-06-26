@@ -11,6 +11,7 @@ workflow augur_from_msa {
 
     input {
         File            msa_or_vcf
+        File?           sequence_ids_to_keep
         File            sample_metadata
         File            ref_fasta
         File            genbank_gb
@@ -22,6 +23,10 @@ workflow augur_from_msa {
         msa_or_vcf: {
           description: "Multiple sequence alignment (aligned fasta) or variants (vcf format).",
           patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
+        }
+        sequence_ids_to_keep: {
+          description: "Optional list of sequence IDs (one per line) to filter the msa_or_vcf to at the beginning (otherwise we compute on all sequences in msa_to_vcf).",
+          patterns: ["*.txt", "*.tsv"]
         }
         sample_metadata: {
           description: "Metadata in tab-separated text format. See https://nextstrain-augur.readthedocs.io/en/stable/faq/metadata.html for details.",
@@ -44,9 +49,14 @@ workflow augur_from_msa {
         }
     }
 
+    call nextstrain__filter_sequences_to_list as filter_sequences_to_list {
+        input:
+            sequences = msa_or_vcf,
+            keep_list = sequence_ids_to_keep
+    }
     call nextstrain__augur_mask_sites as augur_mask_sites {
         input:
-            sequences = msa_or_vcf
+            sequences = filter_sequences_to_list.filtered_fasta
     }
     call nextstrain__draft_augur_tree as draft_augur_tree {
         input:
@@ -106,6 +116,70 @@ workflow augur_from_msa {
         File  auspice_input_json  = export_auspice_json.virus_json
     }
 }
+
+
+
+task nextstrain__filter_sequences_to_list {
+    meta {
+        description: "Filter and subsample a sequence set to a specific list of ids in a text file (one id per line)."
+    }
+    input {
+        File     sequences
+        File?    keep_list
+
+        String   docker = "nextstrain/base:build-20200608T223413Z"
+    }
+    parameter_meta {
+        sequences: {
+          description: "Set of sequences (unaligned fasta or aligned fasta -- one sequence per genome) or variants (vcf format) to subsample using augur filter.",
+          patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
+        }
+        keep_list: {
+          description: "List of strain ids.",
+          patterns: ["*.txt", "*.tsv"]
+        }
+    }
+    String out_fname = sub(sub(basename(sequences), ".vcf", ".filtered.vcf"), ".fasta$", ".filtered.fasta")
+    command {
+        set -e
+        augur version > VERSION
+        if [ -f "~{keep_list}" ]; then
+            echo "strain" > keep_list.txt
+            cat "~{keep_list}" >> keep_list.txt
+            augur filter \
+                --sequences "~{sequences}" \
+                --metadata keep_list.txt \
+                --output "~{out_fname}" | tee STDOUT
+            grep "sequences were dropped during filtering" STDOUT | cut -f 1 -d ' ' > DROP_COUNT
+            grep "sequences have been written out to" STDOUT | cut -f 1 -d ' ' > OUT_COUNT
+        else
+            cp "~{sequences}" "~{out_fname}"
+            echo "0" > DROP_COUNT
+            echo "-1" > OUT_COUNT
+        fi
+        cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
+        cat /proc/loadavg > CPU_LOAD
+        cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
+    }
+    runtime {
+        docker: docker
+        memory: "3 GB"
+        cpu :   2
+        disks:  "local-disk 100 HDD"
+        dx_instance_type: "mem1_ssd1_v2_x2"
+        preemptible: 1
+    }
+    output {
+        File   filtered_fasta    = out_fname
+        String augur_version     = read_string("VERSION")
+        Int    sequences_dropped = read_int("DROP_COUNT")
+        Int    sequences_out     = read_int("OUT_COUNT")
+        Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
+        Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
+        String cpu_load = read_string("CPU_LOAD")
+    }
+}
+
 
 
 
@@ -496,7 +570,7 @@ task nextstrain__assign_clades_to_nodes {
         preemptible: 1
     }
     output {
-        File   node_clade_data_json = "~{out_basename}_node-clade-assignments.json"
+        File   node_clade_data_json = "~{out_basename}_clades.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         String augur_version      = read_string("VERSION")
     }

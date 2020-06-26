@@ -135,6 +135,11 @@ workflows:
    primaryDescriptorPath: pipes/WDL/flattened/filter_classified_bam_to_taxa.wdl
    testParameterFiles:
     - empty.json
+ - name: filter_sequences
+   subclass: WDL
+   primaryDescriptorPath: pipes/WDL/flattened/filter_sequences.wdl
+   testParameterFiles:
+    - empty.json
  - name: genbank
    subclass: WDL
    primaryDescriptorPath: pipes/WDL/flattened/genbank.wdl
@@ -158,6 +163,11 @@ workflows:
  - name: mafft_and_trim
    subclass: WDL
    primaryDescriptorPath: pipes/WDL/flattened/mafft_and_trim.wdl
+   testParameterFiles:
+    - empty.json
+ - name: mafft_iqtree
+   subclass: WDL
+   primaryDescriptorPath: pipes/WDL/flattened/mafft_iqtree.wdl
    testParameterFiles:
     - empty.json
  - name: mafft

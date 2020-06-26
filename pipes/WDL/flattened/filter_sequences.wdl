@@ -2,15 +2,12 @@ version 1.0
 
 
 
-workflow subsample_by_metadata {
+workflow filter_sequences {
     meta {
         description: "Filter and subsample a sequence set. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/filter.html"
     }
 
-    call nextstrain__filter_subsample_sequences as filter_subsample_sequences
-    output {
-        File filtered_fasta = filter_subsample_sequences.filtered_fasta
-    }
+    call nextstrain__filter_subsample_sequences as filter
 }
 
 

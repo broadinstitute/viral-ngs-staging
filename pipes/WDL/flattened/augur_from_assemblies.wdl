@@ -58,7 +58,7 @@ workflow augur_from_assemblies {
                 sequences_fasta     = concatenate.combined,
                 sample_metadata_tsv = sample_metadata
     }
-    call nextstrain__augur_mafft_align as augur_mafft_align {
+    call nextstrain__mafft_one_chr as mafft {
         input:
             sequences = filter_subsample_sequences.filtered_fasta,
             ref_fasta = ref_fasta,
@@ -66,11 +66,11 @@ workflow augur_from_assemblies {
     }
     call nextstrain__snp_sites as snp_sites {
         input:
-            msa_fasta = augur_mafft_align.aligned_sequences
+            msa_fasta = mafft.aligned_sequences
     }
     call nextstrain__augur_mask_sites as augur_mask_sites {
         input:
-            sequences = augur_mafft_align.aligned_sequences
+            sequences = mafft.aligned_sequences
     }
     call nextstrain__draft_augur_tree as draft_augur_tree {
         input:
@@ -125,7 +125,7 @@ workflow augur_from_assemblies {
 
     output {
         File  combined_assemblies = concatenate.combined
-        File  multiple_alignment  = augur_mafft_align.aligned_sequences
+        File  multiple_alignment  = mafft.aligned_sequences
         File  unmasked_snps       = snp_sites.snps_vcf
         File  masked_alignment    = augur_mask_sites.masked_sequences
         File  ml_tree             = draft_augur_tree.aligned_tree
@@ -177,8 +177,8 @@ task nextstrain__filter_subsample_sequences {
 
         Boolean  non_nucleotide=true
 
-        String?  min_date
-        String?  max_date
+        Float?   min_date
+        Float?   max_date
         Int?     min_length
         File?    priority
         Int?     subsample_seed
@@ -246,50 +246,70 @@ task nextstrain__filter_subsample_sequences {
 
 
 
-task nextstrain__augur_mafft_align {
+task nextstrain__mafft_one_chr {
     meta {
-        description: "Align multiple sequences from FASTA. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/align.html"
+        description: "Align multiple sequences from FASTA. Only appropriate for closely related (within 99% nucleotide conservation) genomes. See https://mafft.cbrc.jp/alignment/software/closelyrelatedviralgenomes.html"
     }
     input {
         File     sequences
-        File     ref_fasta
+        File?    ref_fasta
         String   basename
+        Boolean  remove_reference = false
+        Boolean  keep_length = true
 
-        File?    existing_alignment
-        Boolean  fill_gaps = true
-        Boolean  remove_reference = true
-
-        String   docker = "nextstrain/base:build-20200608T223413Z"
+        String   docker = "quay.io/broadinstitute/viral-phylo:2.1.4.0"
     }
     command {
         set -e
-        augur version > VERSION
-        augur align --sequences ~{sequences} \
-            --reference-sequence ~{ref_fasta} \
-            --output ~{basename}_aligned.fasta \
-            ~{true="--fill-gaps" false="" fill_gaps} \
-            ~{"--existing-alignment " + existing_alignment} \
-            ~{true="--remove-reference" false="" remove_reference} \
-            --debug \
-            --nthreads auto
+        touch args.txt
+
+        # if ref_fasta is specified, use "closely related" mode
+        # see https://mafft.cbrc.jp/alignment/software/closelyrelatedviralgenomes.html
+        if [ -f "~{ref_fasta}" ]; then
+            echo --addfragments >> args.txt
+            echo "~{sequences}" >> args.txt
+            echo "~{ref_fasta}" >> args.txt
+        else
+            echo "~{sequences}" >> args.txt
+        fi
+
+        # mafft align to reference in "closely related" mode
+        cat args.txt | xargs -d '\n' mafft --auto --thread -1 \
+            ~{true='--keeplength --mapout' false='' keep_length} \
+            > msa.fasta
+
+        # remove reference sequence
+        python3 <<CODE
+        import Bio.SeqIO
+        seq_it = Bio.SeqIO.parse('msa.fasta', 'fasta')
+        print("dumping " + str(seq_it.__next__().id))
+        Bio.SeqIO.write(seq_it, 'msa_drop_one.fasta', 'fasta')
+        CODE
+        REMOVE_REF="~{true='--remove-reference' false='' remove_reference}"
+        if [ -n "$REMOVE_REF" -a -f "~{ref_fasta}" ]; then
+            mv msa_drop_one.fasta "~{basename}_aligned.fasta"
+        else
+            mv msa.fasta "~{basename}_aligned.fasta"
+        fi
+
+        # profiling and stats
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
         cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
         docker: docker
-        memory: "180 GB"
-        cpu :   64
-        disks:  "local-disk 750 LOCAL"
+        memory: "60 GB"
+        cpu :   32
+        disks:  "local-disk 100 HDD"
         preemptible: 0
-        dx_instance_type: "mem3_ssd2_v2_x32"
+        dx_instance_type: "mem1_ssd1_v2_x36"
     }
     output {
         File   aligned_sequences = "~{basename}_aligned.fasta"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         Int    runtime_sec = ceil(read_float("UPTIME_SEC"))
         String cpu_load = read_string("CPU_LOAD")
-        String augur_version = read_string("VERSION")
     }
 }
 
@@ -710,7 +730,7 @@ task nextstrain__assign_clades_to_nodes {
         preemptible: 1
     }
     output {
-        File   node_clade_data_json = "~{out_basename}_node-clade-assignments.json"
+        File   node_clade_data_json = "~{out_basename}_clades.json"
         Int    max_ram_gb = ceil(read_float("MEM_BYTES")/1000000000)
         String augur_version      = read_string("VERSION")
     }
