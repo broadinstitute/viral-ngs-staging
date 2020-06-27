@@ -11,7 +11,6 @@ workflow augur_from_msa {
 
     input {
         File            msa_or_vcf
-        File?           sequence_ids_to_keep
         File            sample_metadata
         File            ref_fasta
         File            genbank_gb
@@ -23,10 +22,6 @@ workflow augur_from_msa {
         msa_or_vcf: {
           description: "Multiple sequence alignment (aligned fasta) or variants (vcf format).",
           patterns: ["*.fasta", "*.fa", "*.vcf", "*.vcf.gz"]
-        }
-        sequence_ids_to_keep: {
-          description: "Optional list of sequence IDs (one per line) to filter the msa_or_vcf to at the beginning (otherwise we compute on all sequences in msa_to_vcf).",
-          patterns: ["*.txt", "*.tsv"]
         }
         sample_metadata: {
           description: "Metadata in tab-separated text format. See https://nextstrain-augur.readthedocs.io/en/stable/faq/metadata.html for details.",
@@ -51,8 +46,7 @@ workflow augur_from_msa {
 
     call nextstrain__filter_sequences_to_list as filter_sequences_to_list {
         input:
-            sequences = msa_or_vcf,
-            keep_list = sequence_ids_to_keep
+            sequences = msa_or_vcf
     }
     call nextstrain__augur_mask_sites as augur_mask_sites {
         input:
@@ -124,8 +118,8 @@ task nextstrain__filter_sequences_to_list {
         description: "Filter and subsample a sequence set to a specific list of ids in a text file (one id per line)."
     }
     input {
-        File     sequences
-        File?    keep_list
+        File          sequences
+        Array[File]?  keep_list
 
         String   docker = "nextstrain/base:build-20200608T223413Z"
     }
@@ -143,9 +137,11 @@ task nextstrain__filter_sequences_to_list {
     command {
         set -e
         augur version > VERSION
-        if [ -f "~{keep_list}" ]; then
+        KEEP_LISTS="~{sep=' ' select_first([keep_list, []])}"
+
+        if [ -n "$KEEP_LISTS" ]; then
             echo "strain" > keep_list.txt
-            cat "~{keep_list}" >> keep_list.txt
+            cat $KEEP_LISTS >> keep_list.txt
             augur filter \
                 --sequences "~{sequences}" \
                 --metadata keep_list.txt \
