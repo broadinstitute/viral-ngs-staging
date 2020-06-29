@@ -166,7 +166,7 @@ task read_utils__rmdup_ubam {
     String   method="mvicuna"
 
     Int?     machine_mem_gb
-    String?  docker="quay.io/broadinstitute/viral-core:2.1.6"
+    String?  docker="quay.io/broadinstitute/viral-core:2.1.7"
   }
 
   parameter_meta {

@@ -185,7 +185,7 @@ task nextstrain__filter_subsample_sequences {
         String?  exclude_where
         String?  include_where
 
-        String   docker = "nextstrain/base:build-20200608T223413Z"
+        String   docker = "nextstrain/base:build-20200625T042106Z"
     }
     parameter_meta {
         sequences_fasta: {
@@ -351,7 +351,7 @@ task nextstrain__augur_mask_sites {
         File     sequences
         File?    mask_bed
 
-        String   docker = "nextstrain/base:build-20200608T223413Z"
+        String   docker = "nextstrain/base:build-20200625T042106Z"
     }
     parameter_meta {
         sequences: {
@@ -408,7 +408,7 @@ task nextstrain__draft_augur_tree {
         File?    vcf_reference
         String?  tree_builder_args
 
-        String   docker = "nextstrain/base:build-20200608T223413Z"
+        String   docker = "nextstrain/base:build-20200625T042106Z"
     }
     parameter_meta {
         msa_or_vcf: {
@@ -477,7 +477,7 @@ task nextstrain__refine_augur_tree {
         String?  divergence_units
         File?    vcf_reference
 
-        String   docker = "nextstrain/base:build-20200608T223413Z"
+        String   docker = "nextstrain/base:build-20200625T042106Z"
     }
     parameter_meta {
         msa_or_vcf: {
@@ -549,7 +549,7 @@ task nextstrain__ancestral_traits {
         File?          weights
         Float?         sampling_bias_correction
 
-        String   docker = "nextstrain/base:build-20200608T223413Z"
+        String   docker = "nextstrain/base:build-20200625T042106Z"
     }
     String out_basename = basename(tree, '.nwk')
     command {
@@ -602,7 +602,7 @@ task nextstrain__ancestral_tree {
         File?    vcf_reference
         File?    output_vcf
 
-        String   docker = "nextstrain/base:build-20200608T223413Z"
+        String   docker = "nextstrain/base:build-20200625T042106Z"
     }
     parameter_meta {
         msa_or_vcf: {
@@ -663,7 +663,7 @@ task nextstrain__translate_augur_tree {
         File?  vcf_reference_output
         File?  vcf_reference
 
-        String docker = "nextstrain/base:build-20200608T223413Z"
+        String docker = "nextstrain/base:build-20200625T042106Z"
     }
     String out_basename = basename(tree, '.nwk')
     command {
@@ -707,7 +707,7 @@ task nextstrain__assign_clades_to_nodes {
         File ref_fasta
         File clades_tsv
 
-        String docker = "nextstrain/base:build-20200608T223413Z"
+        String docker = "nextstrain/base:build-20200625T042106Z"
     }
     String out_basename = basename(basename(tree_nwk, ".nwk"), "_timetree")
     command {
@@ -757,7 +757,7 @@ task nextstrain__export_auspice_json {
         Array[String]? maintainers
         String?        title
 
-        String docker = "nextstrain/base:build-20200608T223413Z"
+        String docker = "nextstrain/base:build-20200625T042106Z"
     }
     String out_basename = basename(basename(tree, ".nwk"), "_timetree")
     command {
