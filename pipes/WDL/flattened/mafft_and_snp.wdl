@@ -194,7 +194,7 @@ task nextstrain__draft_augur_tree {
         File?    vcf_reference
         String?  tree_builder_args
 
-        String   docker = "nextstrain/base:build-20200625T042106Z"
+        String   docker = "nextstrain/base:build-20200629T201240Z"
     }
     parameter_meta {
         msa_or_vcf: {

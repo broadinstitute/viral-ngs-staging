@@ -38,7 +38,7 @@ task nextstrain__filter_subsample_sequences {
         String?  exclude_where
         String?  include_where
 
-        String   docker = "nextstrain/base:build-20200625T042106Z"
+        String   docker = "nextstrain/base:build-20200629T201240Z"
     }
     parameter_meta {
         sequences_fasta: {
