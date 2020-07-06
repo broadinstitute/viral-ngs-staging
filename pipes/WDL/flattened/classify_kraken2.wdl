@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow classify_kraken2 {
+    meta {
+        description: "Taxonomic classification of sequences via kraken2 (or kraken2x, depending on the database provided)."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call metagenomics__kraken2 as kraken2
 
     output {

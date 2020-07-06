@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow merge_bams {
+    meta {
+        description: "Merge, reheader, or merge-and-reheader BAM files."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call read_utils__merge_and_reheader_bams as merge_and_reheader_bams
     output {
         File   out_bam            = merge_and_reheader_bams.out_bam

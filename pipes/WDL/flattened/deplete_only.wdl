@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow deplete_only {
+    meta {
+        description: "Taxonomic depletion of reads matching unwanted taxa (such as human)."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call taxon_filter__deplete_taxa as deplete_taxa
 
     output {

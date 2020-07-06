@@ -3,6 +3,11 @@ version 1.0
 
 
 workflow merge_vcfs {
+    meta {
+        description: "Merge VCFs from multiple samples using GATK3."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
     call interhost__merge_vcfs_gatk as merge_vcfs_gatk
     output {
         File merged_vcf_gz       = merge_vcfs_gatk.merged_vcf_gz

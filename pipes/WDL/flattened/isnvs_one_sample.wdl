@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow isnvs_one_sample {
+    meta {
+        description: "Intrahost variant calling with V-Phaser2. Requires an assembled genome and a BAM of aligned reads against that same genome."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call intrahost__isnvs_per_sample as isnvs_per_sample
 
     output {

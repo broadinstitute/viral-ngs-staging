@@ -4,6 +4,12 @@ version 1.0
 
 
 workflow demux_only {
+    meta {
+        description: "Picard-based demultiplexing and basecalling from a tarball of a raw BCL directory."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call tasks_demux__illumina_demux as illumina_demux
 
     call reports__MultiQC as MultiQC {
