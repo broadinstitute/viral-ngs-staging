@@ -176,7 +176,7 @@ task reports__fastqc {
   input {
     File     reads_bam
 
-    String   docker="quay.io/broadinstitute/viral-core:2.1.7"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   String   reads_basename=basename(reads_bam, ".bam")
@@ -212,7 +212,7 @@ task reports__align_and_count {
     Int?    topNHits = 3
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.1.7"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   String  reads_basename=basename(reads_bam, ".bam")
@@ -476,7 +476,7 @@ task read_utils__rmdup_ubam {
     String   method="mvicuna"
 
     Int?     machine_mem_gb
-    String?  docker="quay.io/broadinstitute/viral-core:2.1.7"
+    String?  docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   parameter_meta {
@@ -726,7 +726,7 @@ task reports__align_and_count_summary {
 
     String?       output_prefix="count_summary"
 
-    String        docker="quay.io/broadinstitute/viral-core:2.1.7"
+    String        docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   command {
