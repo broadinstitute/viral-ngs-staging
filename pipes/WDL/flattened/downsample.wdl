@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow downsample {
+    meta {
+        description: "Random subsampling of reads."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call reads__downsample_bams as downsample_bams
 
     output {

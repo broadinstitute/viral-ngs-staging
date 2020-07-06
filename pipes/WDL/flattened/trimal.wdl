@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow trimal {
+    meta {
+        description: "Trim a multiple sequence alignment with Trimal."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call interhost__trimal_clean_msa as trimal_clean_msa
 
     output {

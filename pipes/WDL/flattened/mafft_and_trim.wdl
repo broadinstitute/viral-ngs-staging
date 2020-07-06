@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow mafft_and_trim {
+    meta {
+        description: "MAFFT based multiple alignment followed by trimal-based edge trimming."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call interhost__multi_align_mafft as mafft
 
     scatter(alignment in mafft.alignments_by_chr) {

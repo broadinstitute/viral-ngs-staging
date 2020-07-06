@@ -4,6 +4,12 @@ version 1.0
 
 
 workflow classify_krakenuniq {
+    meta {
+        description: "Taxonomic classification of reads using krakenuniq v1."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call metagenomics__krakenuniq as krakenuniq
 
     call reports__aggregate_metagenomics_reports as metag_summary_report {

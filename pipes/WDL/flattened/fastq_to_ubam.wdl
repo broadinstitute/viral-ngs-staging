@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow fastq_to_ubam {
+    meta {
+        description: "Convert reads from fastq format (single or paired) to unaligned BAM format."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call tasks_read_utils__FastqToUBAM as FastqToUBAM
     output {
         File unmapped_bam = FastqToUBAM.unmapped_bam

@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow align_and_count_report {
+    meta {
+        description: "Align reads to reference with minimap2 and count the number of hits. Results are returned in the format of 'samtools idxstats'."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call reports__align_and_count as align_and_count
     output {
         File report               = align_and_count.report

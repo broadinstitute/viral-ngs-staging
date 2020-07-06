@@ -3,6 +3,12 @@ version 1.0
 
 
 workflow kraken2_build {
+    meta {
+        description: "Build a Kraken2 (or 2X) database."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
+
     call metagenomics__build_kraken2_db as build_kraken2_db
 
     output {

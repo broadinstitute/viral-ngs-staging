@@ -4,6 +4,11 @@ version 1.0
 
 
 workflow merge_metagenomics {
+    meta {
+        description: "Combine metagenomic reports from single samples into an aggregate report."
+        author: "Broad Viral Genomics"
+        email:  "viral-ngs@broadinstitute.org"
+    }
 
     input {
         Array[File] krakenuniq_summary_reports
