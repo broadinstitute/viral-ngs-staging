@@ -82,8 +82,8 @@ task reports__MultiQC {
     String?         ignore_analysis_files
     String?         ignore_sample_names
     File?           sample_names
-    Array[String]+? exclude_modules
-    Array[String]+? module_to_use
+    Array[String]?  exclude_modules
+    Array[String]?  module_to_use
     Boolean         data_dir = false
     Boolean         no_data_dir = false
     String?         output_data_format
@@ -127,8 +127,8 @@ task reports__MultiQC {
       ${"--ignore " + ignore_analysis_files} \
       ${"--ignore-samples" + ignore_sample_names} \
       ${"--sample-names " + sample_names} \
-      ${true="--exclude " false="" defined(exclude_modules)}${sep=" --exclude " exclude_modules} \
-      ${true="--module " false="" defined(module_to_use)}${sep=" --module " module_to_use} \
+      ${true="--exclude " false="" defined(exclude_modules)}${sep=' --exclude ' select_first([exclude_modules,[]])} \
+      ${true="--module " false="" defined(module_to_use)}${sep=' --module ' select_first([module_to_use,[]])} \
       ${true="--data-dir" false="" data_dir} \
       ${true="--no-data-dir" false="" no_data_dir} \
       ${"--data-format " + output_data_format} \
