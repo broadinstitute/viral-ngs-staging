@@ -57,7 +57,7 @@ task reports__align_and_count {
   input {
     File    reads_bam
     File    ref_db
-    Int?    topNHits = 3
+    Int     topNHits = 3
 
     Int?    machine_mem_gb
     String  docker="quay.io/broadinstitute/viral-core:2.1.8"
@@ -104,7 +104,7 @@ task reports__align_and_count_summary {
   input {
     Array[File]+  counts_txt
 
-    String?       output_prefix="count_summary"
+    String       output_prefix="count_summary"
 
     String        docker="quay.io/broadinstitute/viral-core:2.1.8"
   }

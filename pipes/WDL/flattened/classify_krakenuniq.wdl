@@ -160,7 +160,7 @@ task reports__aggregate_metagenomics_reports {
     Array[File]+ kraken_summary_reports 
     String       aggregate_taxon_heading_space_separated  = "Viruses"
     String       aggregate_taxlevel_focus                 = "species"
-    Int?         aggregate_top_N_hits                     = 5
+    Int          aggregate_top_N_hits                     = 5
 
     String       docker="quay.io/broadinstitute/viral-classify:2.1.4.0"
   }

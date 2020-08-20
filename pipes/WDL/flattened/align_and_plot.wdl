@@ -162,9 +162,9 @@ task reports__plot_coverage {
     File     aligned_reads_bam
     String   sample_name
 
-    Boolean? skip_mark_dupes=false
-    Boolean? plot_only_non_duplicates=false
-    Boolean? bin_large_plots=false
+    Boolean skip_mark_dupes=false
+    Boolean plot_only_non_duplicates=false
+    Boolean bin_large_plots=false
     String?  binning_summary_statistic="max" # max or min
 
     String   docker="quay.io/broadinstitute/viral-core:2.1.8"

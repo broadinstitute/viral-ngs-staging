@@ -16,7 +16,6 @@ workflow augur_from_newick {
 }
 
 
-
 task nextstrain__export_auspice_json {
     meta {
         description: "export augur files to json suitable for auspice visualization. The metadata tsv input is generally required unless the node_data_jsons comprehensively capture all of it. See https://nextstrain-augur.readthedocs.io/en/stable/usage/cli/export.html"
