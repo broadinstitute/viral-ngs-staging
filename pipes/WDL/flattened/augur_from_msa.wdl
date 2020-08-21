@@ -249,6 +249,7 @@ task nextstrain__draft_augur_tree {
         File?    vcf_reference
         String?  tree_builder_args
 
+        Int?     cpus
         String   docker = "nextstrain/base:build-20200629T201240Z"
     }
     parameter_meta {
@@ -276,7 +277,7 @@ task nextstrain__draft_augur_tree {
     runtime {
         docker: docker
         memory: "32 GB"
-        cpu :   64
+        cpu:    select_first([cpus, 64])
         disks:  "local-disk 750 LOCAL"
         dx_instance_type: "mem1_ssd1_v2_x36"
         preemptible: 0
