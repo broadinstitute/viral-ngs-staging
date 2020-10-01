@@ -71,10 +71,10 @@ task interhost__multi_align_mafft_ref {
 
   runtime {
     docker: "${docker}"
-    memory: select_first([machine_mem_gb, 28]) + " GB"
+    memory: select_first([machine_mem_gb, 60]) + " GB"
     cpu: 8
     disks: "local-disk 200 HDD"
-    dx_instance_type: "mem2_ssd1_v2_x8"
+    dx_instance_type: "mem3_ssd1_v2_x8"
   }
 }
 
