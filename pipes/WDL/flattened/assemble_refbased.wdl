@@ -4,6 +4,8 @@ version 1.0
 
 
 
+
+
 workflow assemble_refbased {
 
     meta {
@@ -114,6 +116,21 @@ workflow assemble_refbased {
             sample_name       = sample_name
     }
 
+    call intrahost__isnvs_per_sample as call_isnvs {
+        input:
+            mapped_bam     = merge_align_to_ref.out_bam,
+            assembly_fasta = call_consensus.refined_assembly_fasta
+    }
+
+    call intrahost__isnvs_vcf as write_isnv_vcf {
+        input:
+            vphaser2Calls             = [call_isnvs.isnvsFile],
+            perSegmentMultiAlignments = [call_consensus.refined_assembly_fasta],
+            reference_fasta           = reference_fasta,
+            sampleNames               = [call_isnvs.sample_name_out],
+            append_reference_to_input = true
+    }
+
     scatter(reads_unmapped_bam in reads_unmapped_bams) {
         call assembly__align_reads as align_to_self {
             input:
@@ -169,13 +186,15 @@ workflow assemble_refbased {
         Int    align_to_ref_merged_read_pairs_aligned       = plot_ref_coverage.read_pairs_aligned
         Float  align_to_ref_merged_bases_aligned            = plot_ref_coverage.bases_aligned
 
+        File   call_isnvs_callfile = call_isnvs.isnvsFile
+
         File   align_to_self_merged_aligned_only_bam   = merge_align_to_self.out_bam
         File   align_to_self_merged_coverage_plot      = plot_self_coverage.coverage_plot
         File   align_to_self_merged_coverage_tsv       = plot_self_coverage.coverage_tsv
         Int    align_to_self_merged_reads_aligned      = plot_self_coverage.reads_aligned
         Int    align_to_self_merged_read_pairs_aligned = plot_self_coverage.read_pairs_aligned
         Float  align_to_self_merged_bases_aligned      = plot_self_coverage.bases_aligned
-        Float  align_to_self_merged_mean_coverage            = plot_self_coverage.mean_coverage
+        Float  align_to_self_merged_mean_coverage      = plot_self_coverage.mean_coverage
 
         String align_to_ref_viral_core_version = align_to_ref.viralngs_version[0]
         String ivar_version                    = ivar_trim.ivar_version[0]
@@ -678,6 +697,151 @@ task assembly__refine_assembly_with_aligned_reads {
         disks: "local-disk 375 LOCAL"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
+}
+
+
+
+
+task intrahost__isnvs_per_sample {
+  input {
+    File    mapped_bam
+    File    assembly_fasta
+
+    Int?    threads
+    Int?    minReadsPerStrand
+    Int?    maxBias
+
+    Int?    machine_mem_gb
+    String  docker="quay.io/broadinstitute/viral-phylo:2.1.4.0"
+
+    String  sample_name = basename(basename(basename(mapped_bam, ".bam"), ".all"), ".mapped")
+  }
+
+  command {
+    intrahost.py --version | tee VERSION
+    echo ${sample_name} | tee SAMPLE_NAME
+    intrahost.py vphaser_one_sample \
+        ${mapped_bam} \
+        ${assembly_fasta} \
+        ${sample_name}.vphaser2.txt.gz \
+        ${'--vphaserNumThreads' + threads} \
+        --removeDoublyMappedReads \
+        ${'--minReadsEach' + minReadsPerStrand} \
+        ${'--maxBias' + maxBias}
+  }
+
+  output {
+    File   isnvsFile        = "${sample_name}.vphaser2.txt.gz"
+    String sample_name_out  = read_string("SAMPLE_NAME")
+    String viralngs_version = read_string("VERSION")
+  }
+  runtime {
+    docker: "${docker}"
+    memory: select_first([machine_mem_gb, 7]) + " GB"
+    dx_instance_type: "mem1_ssd1_v2_x8"
+  }
+}
+
+
+
+
+task intrahost__isnvs_vcf {
+  input {
+    Array[File]    vphaser2Calls
+    Array[File]    perSegmentMultiAlignments
+    File           reference_fasta
+
+    Array[String]? snpEffRef
+    Array[String]? sampleNames
+    String?        emailAddress
+    Boolean        naiveFilter=false
+    Boolean        append_reference_to_input=false
+    Boolean        outputAllPositions=true
+
+    Int?           machine_mem_gb
+    String         docker="quay.io/broadinstitute/viral-phylo:2.1.4.0"
+  }
+
+  Int num_input_fastas = length(perSegmentMultiAlignments)
+
+  parameter_meta {
+    vphaser2Calls:             { description: "vphaser output; ex. vphaser2.<sample>.txt.gz" }
+    perSegmentMultiAlignments: { description: "aligned_##.fasta, where ## is segment number" }
+    snpEffRef:                 { description: "list of accessions to build/find snpEff database" }
+    sampleNames:               { description: "list of sample names" }
+    append_reference_to_input: { description: "Concatenate contents of reference sequence file to input sequence file, useful in the case where the input is already in the reference coordinate space and the reference sequence is not in the same file. The reference must contain exactly one segment since we cannot necessarily know without alignment which of the per-segment inputs each of several reference corresponds to." }
+    emailAddress:              { description: "email address passed to NCBI if we need to download reference sequences" }
+  }
+
+  command {
+    set -ex -o pipefail
+
+    intrahost.py --version | tee VERSION
+
+    if [[ "${append_reference_to_input}" == "true" ]]; then
+      if [[ "${num_input_fastas}" == "1" ]]; then
+        if [[ "$(grep '>' ${reference_fasta} | wc -l | tr -d ' ')" == "1" ]]; then
+          cat ${sep=' ' perSegmentMultiAlignments} reference_fasta > ref_and_data_aligned_to_ref.fasta
+          input_alignments="ref_and_data_aligned_to_ref.fasta"
+        else
+          echo "Reference fasta has >1 sequence, target for concatenation is unclear."
+          exit 1
+        fi
+      else
+        echo ">1 input fasta, unclear to which reference fasta data should be concatenated"
+        exit 1
+      fi
+    else
+      input_alignments="${sep=' ' perSegmentMultiAlignments}"
+    fi
+
+    SAMPLES="${sep=' ' sampleNames}"
+    if [ -n "$SAMPLES" ]; then SAMPLES="--samples $SAMPLES"; fi
+
+    providedSnpRefAccessions="${sep=' ' snpEffRef}"
+    if [ -n "$providedSnpRefAccessions" ]; then 
+      snpRefAccessions="$providedSnpRefAccessions";
+    else
+      snpRefAccessions="$(python -c "from Bio import SeqIO; print(' '.join(list(s.id for s in SeqIO.parse('${reference_fasta}', 'fasta'))))")"
+    fi
+
+    echo "snpRefAccessions: $snpRefAccessions"
+
+    intrahost.py merge_to_vcf \
+        ${reference_fasta} \
+        isnvs.vcf.gz \
+        $SAMPLES \
+        --isnvs ${sep=' ' vphaser2Calls} \
+        --alignments $input_alignments \
+        --strip_chr_version \
+        ${true="--naive_filter" false="" naiveFilter} \
+        ${true="--output_all_positions" false="" outputAllPositions} \
+        --parse_accession
+        
+    interhost.py snpEff \
+        isnvs.vcf.gz \
+        $snpRefAccessions \
+        isnvs.annot.vcf.gz \
+        ${'--emailAddress=' + emailAddress}
+
+    intrahost.py iSNV_table \
+        isnvs.annot.vcf.gz \
+        isnvs.annot.txt.gz
+  }
+
+  output {
+    File        isnvs_vcf           = "isnvs.vcf.gz"
+    File        isnvs_vcf_idx       = "isnvs.vcf.gz.tbi"
+    File        isnvs_annot_vcf     = "isnvs.annot.vcf.gz"
+    File        isnvs_annot_vcf_idx = "isnvs.annot.vcf.gz.tbi"
+    File        isnvs_annot_txt     = "isnvs.annot.txt.gz"
+    String      viralngs_version    = read_string("VERSION")
+  }
+  runtime {
+    docker: "${docker}"
+    memory: select_first([machine_mem_gb, 4]) + " GB"
+    dx_instance_type: "mem1_ssd1_v2_x4"
+  }
 }
 
 

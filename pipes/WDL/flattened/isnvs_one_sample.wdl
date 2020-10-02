@@ -36,10 +36,11 @@ task intrahost__isnvs_per_sample {
 
   command {
     intrahost.py --version | tee VERSION
+    echo ${sample_name} | tee SAMPLE_NAME
     intrahost.py vphaser_one_sample \
         ${mapped_bam} \
         ${assembly_fasta} \
-        vphaser2.${sample_name}.txt.gz \
+        ${sample_name}.vphaser2.txt.gz \
         ${'--vphaserNumThreads' + threads} \
         --removeDoublyMappedReads \
         ${'--minReadsEach' + minReadsPerStrand} \
@@ -47,7 +48,8 @@ task intrahost__isnvs_per_sample {
   }
 
   output {
-    File   isnvsFile        = "vphaser2.${sample_name}.txt.gz"
+    File   isnvsFile        = "${sample_name}.vphaser2.txt.gz"
+    String sample_name_out  = read_string("SAMPLE_NAME")
     String viralngs_version = read_string("VERSION")
   }
   runtime {

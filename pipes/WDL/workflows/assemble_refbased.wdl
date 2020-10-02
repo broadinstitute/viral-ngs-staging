@@ -1,6 +1,8 @@
 version 1.0
 
 import "../tasks/tasks_assembly.wdl" as assembly
+import "../tasks/tasks_intrahost.wdl" as intrahost
+import "../tasks/tasks_interhost.wdl" as interhost
 import "../tasks/tasks_reports.wdl" as reports
 import "../tasks/tasks_read_utils.wdl" as read_utils
 
@@ -114,6 +116,21 @@ workflow assemble_refbased {
             sample_name       = sample_name
     }
 
+    call intrahost.isnvs_per_sample as call_isnvs {
+        input:
+            mapped_bam     = merge_align_to_ref.out_bam,
+            assembly_fasta = call_consensus.refined_assembly_fasta
+    }
+
+    call intrahost.isnvs_vcf as write_isnv_vcf {
+        input:
+            vphaser2Calls             = [call_isnvs.isnvsFile],
+            perSegmentMultiAlignments = [call_consensus.refined_assembly_fasta],
+            reference_fasta           = reference_fasta,
+            sampleNames               = [call_isnvs.sample_name_out],
+            append_reference_to_input = true
+    }
+
     scatter(reads_unmapped_bam in reads_unmapped_bams) {
         call assembly.align_reads as align_to_self {
             input:
@@ -169,13 +186,15 @@ workflow assemble_refbased {
         Int    align_to_ref_merged_read_pairs_aligned       = plot_ref_coverage.read_pairs_aligned
         Float  align_to_ref_merged_bases_aligned            = plot_ref_coverage.bases_aligned
 
+        File   call_isnvs_callfile = call_isnvs.isnvsFile
+
         File   align_to_self_merged_aligned_only_bam   = merge_align_to_self.out_bam
         File   align_to_self_merged_coverage_plot      = plot_self_coverage.coverage_plot
         File   align_to_self_merged_coverage_tsv       = plot_self_coverage.coverage_tsv
         Int    align_to_self_merged_reads_aligned      = plot_self_coverage.reads_aligned
         Int    align_to_self_merged_read_pairs_aligned = plot_self_coverage.read_pairs_aligned
         Float  align_to_self_merged_bases_aligned      = plot_self_coverage.bases_aligned
-        Float  align_to_self_merged_mean_coverage            = plot_self_coverage.mean_coverage
+        Float  align_to_self_merged_mean_coverage      = plot_self_coverage.mean_coverage
 
         String align_to_ref_viral_core_version = align_to_ref.viralngs_version[0]
         String ivar_version                    = ivar_trim.ivar_version[0]
