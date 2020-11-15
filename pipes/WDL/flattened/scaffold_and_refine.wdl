@@ -76,7 +76,7 @@ task assembly__scaffold {
       String       docker="quay.io/broadinstitute/viral-assemble:2.1.4.0"
 
       # do this in multiple steps in case the input doesn't actually have "assembly1-x" in the name
-      String       sample_name = basename(basename(basename(contigs_fasta, ".fasta"), ".assembly1-trinity"), ".assembly1-spades")
+      String       sample_name = basename(basename(contigs_fasta, ".fasta"), ".assembly1-spades")
     }
 
     command {
