@@ -30,7 +30,7 @@ task intrahost__isnvs_per_sample {
     Boolean removeDoublyMappedReads=true
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-phylo:2.1.4.0"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.1.10.0"
 
     String  sample_name = basename(basename(basename(mapped_bam, ".bam"), ".all"), ".mapped")
   }
