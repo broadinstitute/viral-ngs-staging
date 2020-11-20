@@ -94,21 +94,13 @@ task nextstrain__mafft_one_chr {
         String   basename
         Boolean  remove_reference = false
         Boolean  keep_length = true
-        Boolean  large = false
-        Boolean  memsavetree = false
 
-        String   docker = "quay.io/broadinstitute/viral-phylo:2.1.10.0"
-        Int      mem_size = 60
-        Int      cpus = 32
+        Int?    machine_mem_gb 
+        String   docker = "quay.io/broadinstitute/viral-phylo:2.1.4.0"
     }
     command {
         set -e
         touch args.txt
-
-        # boolean options
-        echo "~{true='--large' false='' large}" >> args.txt
-        echo "~{true='--memsavetree' false='' memsavetree}" >> args.txt
-        echo "--auto" >> args.txt
 
         # if ref_fasta is specified, use "closely related" mode
         # see https://mafft.cbrc.jp/alignment/software/closelyrelatedviralgenomes.html
@@ -121,7 +113,7 @@ task nextstrain__mafft_one_chr {
         fi
 
         # mafft align to reference in "closely related" mode
-        cat args.txt | grep . | xargs -d '\n' mafft --thread -1 \
+        cat args.txt | xargs -d '\n' mafft --auto --thread -1 \
             ~{true='--keeplength --mapout' false='' keep_length} \
             > msa.fasta
 
@@ -146,8 +138,8 @@ task nextstrain__mafft_one_chr {
     }
     runtime {
         docker: docker
-        memory: mem_size + " GB"
-        cpu :   cpus
+        memory: select_first([machine_mem_gb, 10]) + " GB"
+        cpu :   32
         disks:  "local-disk 100 HDD"
         preemptible: 0
         dx_instance_type: "mem1_ssd1_v2_x36"

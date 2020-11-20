@@ -176,7 +176,7 @@ task reports__fastqc {
   input {
     File     reads_bam
 
-    String   docker="quay.io/broadinstitute/viral-core:2.1.10"
+    String   docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   String   reads_basename=basename(reads_bam, ".bam")
@@ -212,7 +212,7 @@ task reports__align_and_count {
     Int     topNHits = 3
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-core:2.1.10"
+    String  docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   String  reads_basename=basename(reads_bam, ".bam")
@@ -265,7 +265,7 @@ task metagenomics__kraken2 {
     Int?     min_base_qual
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.10.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.4.0"
   }
 
   parameter_meta {
@@ -391,7 +391,7 @@ task metagenomics__filter_bam_to_taxa {
     String         out_filename_suffix = "filtered"
 
     Int?           machine_mem_gb
-    String         docker="quay.io/broadinstitute/viral-classify:2.1.10.0"
+    String         docker="quay.io/broadinstitute/viral-classify:2.1.4.0"
   }
 
   String out_basename = basename(classified_bam, ".bam") + "." + out_filename_suffix
@@ -476,7 +476,7 @@ task read_utils__rmdup_ubam {
     String   method="mvicuna"
 
     Int?     machine_mem_gb
-    String?  docker="quay.io/broadinstitute/viral-core:2.1.10"
+    String?  docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   parameter_meta {
@@ -526,17 +526,18 @@ task assembly__assemble {
       File     reads_unmapped_bam
       File     trim_clip_db
 
+      Int?     trinity_n_reads=250000
       Int?     spades_n_reads=10000000
       Int?     spades_min_contig_len=0
 
-      String?  assembler="spades"
+      String?  assembler="trinity"  # trinity, spades, or trinity-spades
       Boolean? always_succeed=false
 
       # do this in two steps in case the input doesn't actually have "taxfilt" in the name
       String   sample_name = basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt")
 
       Int?     machine_mem_gb
-      String   docker="quay.io/broadinstitute/viral-assemble:2.1.10.0"
+      String   docker="quay.io/broadinstitute/viral-assemble:2.1.4.0"
     }
 
     command {
@@ -548,7 +549,18 @@ task assembly__assemble {
 
         assembly.py --version | tee VERSION
 
-        if [[ "${assembler}" == "spades" ]]; then
+        if [[ "${assembler}" == "trinity" ]]; then
+          assembly.py assemble_trinity \
+            ${reads_unmapped_bam} \
+            ${trim_clip_db} \
+            ${sample_name}.assembly1-${assembler}.fasta \
+            ${'--n_reads=' + trinity_n_reads} \
+            ${true='--alwaysSucceed' false="" always_succeed} \
+            --JVMmemory "$mem_in_mb"m \
+            --outReads=${sample_name}.subsamp.bam \
+            --loglevel=DEBUG
+
+        elif [[ "${assembler}" == "spades" ]]; then
           assembly.py assemble_spades \
             ${reads_unmapped_bam} \
             ${trim_clip_db} \
@@ -559,6 +571,28 @@ task assembly__assemble {
             --memLimitGb $mem_in_gb \
             --outReads=${sample_name}.subsamp.bam \
             --loglevel=DEBUG
+
+        elif [[ "${assembler}" == "trinity-spades" ]]; then
+          assembly.py assemble_trinity \
+            ${reads_unmapped_bam} \
+            ${trim_clip_db} \
+            ${sample_name}.assembly1-trinity.fasta \
+            ${'--n_reads=' + trinity_n_reads} \
+            --JVMmemory "$mem_in_mb"m \
+            --outReads=${sample_name}.subsamp.bam \
+            ${true='--always_succeed' false='' always_succeed} \
+            --loglevel=DEBUG
+          assembly.py assemble_spades \
+            ${reads_unmapped_bam} \
+            ${trim_clip_db} \
+            ${sample_name}.assembly1-${assembler}.fasta \
+            --contigsUntrusted=${sample_name}.assembly1-trinity.fasta \
+            ${'--nReads=' + spades_n_reads} \
+            ${true='--alwaysSucceed' false='' always_succeed} \
+            ${'--minContigLen=' + spades_min_contig_len} \
+            --memLimitGb $mem_in_gb \
+            --loglevel=DEBUG
+
         else
           echo "unrecognized assembler ${assembler}" >&2
           exit 1
@@ -692,7 +726,7 @@ task reports__align_and_count_summary {
 
     String       output_prefix="count_summary"
 
-    String        docker="quay.io/broadinstitute/viral-core:2.1.10"
+    String        docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   command {
@@ -726,7 +760,7 @@ task reports__aggregate_metagenomics_reports {
     String       aggregate_taxlevel_focus                 = "species"
     Int          aggregate_top_N_hits                     = 5
 
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.10.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.4.0"
   }
 
   parameter_meta {
@@ -782,7 +816,7 @@ task metagenomics__krona {
     Int?     magnitude_column
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.10.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.4.0"
   }
 
   command {

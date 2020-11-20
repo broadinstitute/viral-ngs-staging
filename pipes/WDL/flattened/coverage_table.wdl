@@ -18,7 +18,7 @@ task reports__coverage_report {
     Array[File]  mapped_bam_idx # optional.. speeds it up if you provide it, otherwise we auto-index
     String       out_report_name="coverage_report.txt"
 
-    String       docker="quay.io/broadinstitute/viral-core:2.1.10"
+    String       docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   command {

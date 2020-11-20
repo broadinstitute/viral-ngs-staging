@@ -38,7 +38,7 @@ task reports__compare_two_genomes {
     File          genome_two
     String        out_basename
 
-    String        docker="quay.io/broadinstitute/viral-assemble:2.1.10.0"
+    String        docker="quay.io/broadinstitute/viral-assemble:2.1.4.0"
   }
 
   command {
@@ -75,7 +75,7 @@ task reports__tsv_stack {
   input {
     Array[File]+   input_tsvs
     String         out_basename
-    String         docker="quay.io/broadinstitute/viral-core:2.1.10"
+    String         docker="quay.io/broadinstitute/viral-core:2.1.8"
   }
 
   command {
