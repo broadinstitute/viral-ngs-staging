@@ -102,7 +102,7 @@ task nextstrain__mafft_one_chr {
         Int      cpus = 32
     }
     command {
-        set -e
+        set -e -o pipefail
         touch args.txt
 
         # boolean options
