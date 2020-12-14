@@ -76,7 +76,7 @@ task tasks_demux__illumina_demux {
       RUNINFO_FILE="${runinfo}"
     else
       # full RunInfo.xml path
-      RUNINFO_FILE="$(find $FLOWCELL_DIR -type f -maxdepth 3 -name RunInfo.xml | head -n 1)"
+      RUNINFO_FILE="$(find $FLOWCELL_DIR -type f -name RunInfo.xml | head -n 1)"
     fi
     
     # Parse the lane count & run ID from RunInfo.xml file
