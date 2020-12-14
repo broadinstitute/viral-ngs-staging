@@ -191,7 +191,7 @@ task taxon_filter__deplete_taxa {
 
     Int?         cpu=8
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.10.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.12.0"
   }
 
   parameter_meta {
@@ -290,7 +290,7 @@ task taxon_filter__filter_to_taxon {
     String?  neg_control_prefixes_space_separated = "neg water NTC"
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.10.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.12.0"
   }
 
   # do this in two steps in case the input doesn't actually have "cleaned" in the name
@@ -354,7 +354,7 @@ task read_utils__rmdup_ubam {
     String   method="mvicuna"
 
     Int?     machine_mem_gb
-    String?  docker="quay.io/broadinstitute/viral-core:2.1.10"
+    String?  docker="quay.io/broadinstitute/viral-core:2.1.12"
   }
 
   parameter_meta {
@@ -414,7 +414,7 @@ task assembly__assemble {
       String   sample_name = basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt")
 
       Int?     machine_mem_gb
-      String   docker="quay.io/broadinstitute/viral-assemble:2.1.10.0"
+      String   docker="quay.io/broadinstitute/viral-assemble:2.1.12.0"
     }
 
     command {
@@ -482,7 +482,7 @@ task assembly__scaffold {
       Float?       scaffold_min_pct_contig_aligned
 
       Int?         machine_mem_gb
-      String       docker="quay.io/broadinstitute/viral-assemble:2.1.10.0"
+      String       docker="quay.io/broadinstitute/viral-assemble:2.1.12.0"
 
       # do this in multiple steps in case the input doesn't actually have "assembly1-x" in the name
       String       sample_name = basename(basename(contigs_fasta, ".fasta"), ".assembly1-spades")
@@ -581,7 +581,7 @@ task assembly__refine_2x_and_plot {
       String? plot_coverage_novoalign_options="-r Random -l 40 -g 40 -x 20 -t 100 -k"
 
       Int?    machine_mem_gb
-      String  docker="quay.io/broadinstitute/viral-assemble:2.1.10.0"
+      String  docker="quay.io/broadinstitute/viral-assemble:2.1.12.0"
 
       # do this in two steps in case the input doesn't actually have "cleaned" in the name
       String  sample_name = basename(basename(reads_unmapped_bam, ".bam"), ".cleaned")
@@ -716,7 +716,7 @@ task intrahost__isnvs_per_sample {
     Boolean removeDoublyMappedReads=true
 
     Int?    machine_mem_gb
-    String  docker="quay.io/broadinstitute/viral-phylo:2.1.10.0"
+    String  docker="quay.io/broadinstitute/viral-phylo:2.1.12.0"
 
     String  sample_name = basename(basename(basename(mapped_bam, ".bam"), ".all"), ".mapped")
   }

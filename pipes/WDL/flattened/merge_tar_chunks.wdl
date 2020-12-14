@@ -23,7 +23,7 @@ task demux__merge_tarballs {
     String        out_filename
 
     Int?          machine_mem_gb
-    String        docker="quay.io/broadinstitute/viral-core:2.1.10"
+    String        docker="quay.io/broadinstitute/viral-core:2.1.12"
   }
 
   command {

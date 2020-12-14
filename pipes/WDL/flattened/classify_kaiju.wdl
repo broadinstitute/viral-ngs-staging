@@ -28,7 +28,7 @@ task metagenomics__kaiju {
     File     krona_taxonomy_db_tgz  # taxonomy/taxonomy.tab
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.10.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.12.0"
   }
 
   String   input_basename = basename(reads_unmapped_bam, ".bam")
