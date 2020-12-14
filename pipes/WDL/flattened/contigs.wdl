@@ -68,7 +68,7 @@ task taxon_filter__deplete_taxa {
 
     Int?         cpu=8
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.10.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.12.0"
   }
 
   parameter_meta {
@@ -166,7 +166,7 @@ task read_utils__rmdup_ubam {
     String   method="mvicuna"
 
     Int?     machine_mem_gb
-    String?  docker="quay.io/broadinstitute/viral-core:2.1.10"
+    String?  docker="quay.io/broadinstitute/viral-core:2.1.12"
   }
 
   parameter_meta {
@@ -226,7 +226,7 @@ task assembly__assemble {
       String   sample_name = basename(basename(reads_unmapped_bam, ".bam"), ".taxfilt")
 
       Int?     machine_mem_gb
-      String   docker="quay.io/broadinstitute/viral-assemble:2.1.10.0"
+      String   docker="quay.io/broadinstitute/viral-assemble:2.1.12.0"
     }
 
     command {
