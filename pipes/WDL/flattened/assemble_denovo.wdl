@@ -191,7 +191,7 @@ task taxon_filter__deplete_taxa {
 
     Int?         cpu=8
     Int?         machine_mem_gb
-    String       docker="quay.io/broadinstitute/viral-classify:2.1.12.0"
+    String       docker="quay.io/broadinstitute/viral-classify:2.1.12.1"
   }
 
   parameter_meta {
@@ -290,7 +290,7 @@ task taxon_filter__filter_to_taxon {
     String?  neg_control_prefixes_space_separated = "neg water NTC"
 
     Int?     machine_mem_gb
-    String   docker="quay.io/broadinstitute/viral-classify:2.1.12.0"
+    String   docker="quay.io/broadinstitute/viral-classify:2.1.12.1"
   }
 
   # do this in two steps in case the input doesn't actually have "cleaned" in the name
