@@ -172,7 +172,7 @@ task nextstrain__snp_sites {
     String out_basename = basename(msa_fasta, ".fasta")
     command {
         snp-sites -V > VERSION
-        snp-sites -v ~{true="" false="-c" allow_wildcard_bases} -o ~{out_basename}.vcf ~{msa_fasta}
+        snp-sites -v ~{true="" false="-c" allow_wildcard_bases} -o "~{out_basename}.vcf" "~{msa_fasta}"
     }
     runtime {
         docker: docker
@@ -217,9 +217,9 @@ task nextstrain__draft_augur_tree {
     command {
         set -e
         augur version > VERSION
-        AUGUR_RECURSION_LIMIT=10000 augur tree --alignment ~{msa_or_vcf} \
-            --output ~{out_basename}_~{method}.nwk \
-            --method ~{method} \
+        AUGUR_RECURSION_LIMIT=10000 augur tree --alignment "~{msa_or_vcf}" \
+            --output "~{out_basename}_~{method}.nwk" \
+            --method "~{method}" \
             --substitution-model ~{default="GTR" substitution_model} \
             ~{"--exclude-sites " + exclude_sites} \
             ~{"--vcf-reference " + vcf_reference} \

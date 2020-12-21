@@ -69,8 +69,8 @@ task nextstrain__filter_subsample_sequences {
 
         set -o pipefail
         cat wherefile | tr '\n' '\0' | xargs -0 -t augur filter \
-            --sequences ~{sequences_fasta} \
-            --metadata ~{sample_metadata_tsv} \
+            --sequences "~{sequences_fasta}" \
+            --metadata "~{sample_metadata_tsv}" \
             ~{"--min-date " + min_date} \
             ~{"--max-date " + max_date} \
             ~{"--min-length " + min_length} \
