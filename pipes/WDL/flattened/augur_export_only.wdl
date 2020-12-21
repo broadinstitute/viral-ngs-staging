@@ -78,13 +78,13 @@ task nextstrain__export_auspice_json {
         cat $VALS >> exportargs
 
         (export AUGUR_RECURSION_LIMIT=10000; cat exportargs | tr '\n' '\0' | xargs -0 -t augur export v2 \
-            --tree ~{tree} \
+            --tree "~{tree}" \
             ~{"--metadata " + sample_metadata} \
-            --auspice-config ~{auspice_config} \
+            --auspice-config "~{auspice_config}" \
             ~{"--lat-longs " + lat_longs_tsv} \
             ~{"--colors " + colors_tsv} \
             ~{"--description " + description_md} \
-            --output ~{out_basename}_auspice.json)
+            --output "~{out_basename}_auspice.json")
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
         cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES

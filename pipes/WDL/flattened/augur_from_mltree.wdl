@@ -147,11 +147,11 @@ task nextstrain__refine_augur_tree {
         set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur refine \
-            --tree ~{raw_tree} \
-            --alignment ~{msa_or_vcf} \
-            --metadata ~{metadata} \
-            --output-tree ~{out_basename}_timetree.nwk \
-            --output-node-data ~{out_basename}_branch_lengths.json \
+            --tree "~{raw_tree}" \
+            --alignment "~{msa_or_vcf}" \
+            --metadata "~{metadata}" \
+            --output-tree "~{out_basename}_timetree.nwk" \
+            --output-node-data "~{out_basename}_branch_lengths.json" \
             --timetree \
             ~{"--clock-rate " + clock_rate} \
             ~{"--clock-std-dev " + clock_std_dev} \
@@ -213,8 +213,8 @@ task nextstrain__ancestral_traits {
         set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur traits \
-            --tree ~{tree} \
-            --metadata ~{metadata} \
+            --tree "~{tree}" \
+            --metadata "~{metadata}" \
             --columns ~{sep=" " columns} \
             --output-node-data "~{out_basename}_ancestral_traits.json" \
             ~{"--weights " + weights} \
@@ -272,12 +272,12 @@ task nextstrain__ancestral_tree {
         set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur ancestral \
-            --tree ~{tree} \
-            --alignment ~{msa_or_vcf} \
-            --output-node-data ~{out_basename}_nt_muts.json \
+            --tree "~{tree}" \
+            --alignment "~{msa_or_vcf}" \
+            --output-node-data "~{out_basename}_nt_muts.json" \
             ~{"--vcf-reference " + vcf_reference} \
             ~{"--output-vcf " + output_vcf} \
-            --output-sequences ~{out_basename}_ancestral_sequences.fasta \
+            --output-sequences "~{out_basename}_ancestral_sequences.fasta" \
             ~{true="--keep-overhangs" false="" keep_overhangs} \
             --inference ~{default="joint" inference} \
             ~{true="--keep-ambiguous" false="" keep_ambiguous} \
@@ -326,9 +326,9 @@ task nextstrain__translate_augur_tree {
     command {
         set -e
         augur version > VERSION
-        AUGUR_RECURSION_LIMIT=10000 augur translate --tree ~{tree} \
-            --ancestral-sequences ~{nt_muts} \
-            --reference-sequence ~{genbank_gb} \
+        AUGUR_RECURSION_LIMIT=10000 augur translate --tree "~{tree}" \
+            --ancestral-sequences "~{nt_muts}" \
+            --reference-sequence "~{genbank_gb}" \
             ~{"--vcf-reference-output " + vcf_reference_output} \
             ~{"--vcf-reference " + vcf_reference} \
             ~{"--genes " + genes} \
@@ -371,11 +371,11 @@ task nextstrain__assign_clades_to_nodes {
         set -e
         augur version > VERSION
         AUGUR_RECURSION_LIMIT=10000 augur clades \
-        --tree ~{tree_nwk} \
-        --mutations ~{nt_muts_json} ~{aa_muts_json} \
-        --reference ~{ref_fasta} \
-        --clades ~{clades_tsv} \
-        --output-node-data ~{out_basename}_clades.json
+        --tree "~{tree_nwk}" \
+        --mutations "~{nt_muts_json}" "~{aa_muts_json}" \
+        --reference "~{ref_fasta}" \
+        --clades "~{clades_tsv}" \
+        --output-node-data "~{out_basename}_clades.json"
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
     }
     runtime {
@@ -456,13 +456,13 @@ task nextstrain__export_auspice_json {
         cat $VALS >> exportargs
 
         (export AUGUR_RECURSION_LIMIT=10000; cat exportargs | tr '\n' '\0' | xargs -0 -t augur export v2 \
-            --tree ~{tree} \
+            --tree "~{tree}" \
             ~{"--metadata " + sample_metadata} \
-            --auspice-config ~{auspice_config} \
+            --auspice-config "~{auspice_config}" \
             ~{"--lat-longs " + lat_longs_tsv} \
             ~{"--colors " + colors_tsv} \
             ~{"--description " + description_md} \
-            --output ~{out_basename}_auspice.json)
+            --output "~{out_basename}_auspice.json")
         cat /proc/uptime | cut -f 1 -d ' ' > UPTIME_SEC
         cat /proc/loadavg > CPU_LOAD
         cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes > MEM_BYTES
